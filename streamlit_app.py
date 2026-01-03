@@ -23,72 +23,68 @@ def load_data():
 
 df = load_data()
 
-# 3. التنسيق (تكبير الأزرار طولاً وعرضاً)
+# 3. التنسيق (أزرار مستطيلة أنيقة بعرض الشاشة)
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; color: white; direction: rtl; }
     [data-testid="stSidebar"] { display: none; }
     
-    /* الخط أسود سادة */
+    /* توحيد الخط الأسود السادة */
     * { font-family: 'Arial', sans-serif !important; }
     
     .main-header { 
         background-color: #1E3A8A; 
         text-align: center; 
-        padding: 30px 10px; 
+        padding: 25px 10px; 
         border-radius: 15px; 
-        border-bottom: 8px solid #fca311; 
-        margin-bottom: 25px; 
+        border-bottom: 5px solid #fca311; 
+        margin-bottom: 20px; 
     }
-    .main-header h1 { margin: 0; font-size: 35px !important; color: white; font-weight: 900; }
-    .main-header p { margin: 5px 0 0 0; font-size: 20px; color: #fca311; }
+    .main-header h1 { margin: 0; font-size: 30px !important; color: white; font-weight: bold; }
+    .main-header p { margin: 5px 0 0 0; font-size: 18px; color: #fca311; }
 
     .info-box {
         background-color: #1c2333;
-        padding: 15px;
+        padding: 12px;
         border-radius: 10px;
         border: 1px solid #2d3748;
         margin-bottom: 20px;
         text-align: right;
     }
     
-    .section-title { text-align: right !important; font-size: 24px; font-weight: bold; margin-bottom: 15px; }
+    .section-title { text-align: right !important; font-size: 20px; font-weight: bold; margin-bottom: 10px; }
 
-    /* الأزرار الصفراء: جعلها ضخمة (عرض 100% وطول 100px) */
+    /* الأزرار الصفراء: مستطيلة أنيقة بعرض كامل الـ Container */
     div.stButton > button {
         width: 100% !important;
         background-color: #fca311 !important;
         color: #1E3A8A !important;
-        font-weight: 900 !important;
-        height: 100px !important; /* زيادة الطول ليصبح الزر ضخم */
-        font-size: 28px !important; /* تكبير الخط */
-        border-radius: 15px !important;
-        margin-bottom: 15px !important;
+        font-weight: bold !important;
+        height: 65px !important; /* ارتفاع متناسق وليس ضخماً */
+        font-size: 22px !important;
+        border-radius: 10px !important;
+        margin-bottom: 12px !important;
         border: none !important;
-        box-shadow: 0px 6px 0px #b7860b; /* ظل ليعطي عمق للزر */
+        transition: 0.3s;
     }
     
-    div.stButton > button:active {
-        transform: translateY(4px);
-        box-shadow: 0px 2px 0px #b7860b;
-    }
+    div.stButton > button:hover { background-color: #ffb703 !important; }
 
     input { 
         background-color: #ffffcc !important; color: #000000 !important;
         font-weight: bold !important; text-align: right !important;
-        height: 60px !important; font-size: 22px !important;
+        height: 55px !important; font-size: 20px !important;
     }
 
     .item-label { 
-        background-color: #1E3A8A; color: white; padding: 15px; 
-        border-radius: 8px; font-weight: bold; text-align: right; font-size: 20px;
+        background-color: #1E3A8A; color: white; padding: 12px; 
+        border-radius: 8px; font-weight: bold; text-align: right; font-size: 18px;
     }
 
     .wa-button {
-        background-color: #25d366; color: white; padding: 25px; 
-        border-radius: 15px; text-align: center; font-weight: bold; 
-        font-size: 26px; display: block; width: 100%; text-decoration: none;
-        box-shadow: 0px 6px 0px #128c7e;
+        background-color: #25d366; color: white; padding: 18px; 
+        border-radius: 12px; text-align: center; font-weight: bold; 
+        font-size: 22px; display: block; width: 100%; text-decoration: none;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -104,7 +100,7 @@ if df is not None:
     # --- الصفحة الرئيسية ---
     if st.session_state.page == 'home':
         st.markdown('<div class="main-header"><h1>طلبيات المندوبين</h1><p>شركة حلباوي إخوان</p></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="info-box">🗓️ الوقت: {now} <br> 👤 المندوب: {st.session_state.cust_name}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="info-box">🗓️ {now} | 👤 {st.session_state.cust_name if st.session_state.cust_name else "---"}</div>', unsafe_allow_html=True)
 
         st.markdown("<p class='section-title'>👤 اسم المندوب / الزبون:</p>", unsafe_allow_html=True)
         st.session_state.cust_name = st.text_input("n_in", value=st.session_state.cust_name, label_visibility="collapsed")
@@ -117,6 +113,7 @@ if df is not None:
                 st.session_state.page = 'details'
                 st.rerun()
         
+        # زر أصناف خاصة في الأسفل
         if st.button("🌟 أصناف خاصة"):
             st.session_state.page = 'special'
             st.rerun()
@@ -130,7 +127,7 @@ if df is not None:
     # --- صفحة أصناف خاصة ---
     elif st.session_state.page == 'special':
         st.markdown('<div class="main-header"><h1>أصناف خاصة</h1></div>', unsafe_allow_html=True)
-        if st.button("🔙 عودة"):
+        if st.button("🔙 عودة للقائمة"):
             st.session_state.page = 'home'
             st.rerun()
             
@@ -164,7 +161,7 @@ if df is not None:
             with st.expander(f"🔽 {weight}", expanded=True):
                 w_df = cat_df[cat_df['pack'] == weight]
                 for sub in w_df['sub'].unique():
-                    st.markdown(f'<div style="color:#fca311; font-weight:bold; text-align:right; margin:15px 0; font-size:20px;">{sub}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="color:#fca311; font-weight:bold; text-align:right; margin:10px 0;">{sub}</div>', unsafe_allow_html=True)
                     for _, row in w_df[w_df['sub'] == sub].iterrows():
                         st.markdown(f'<div class="item-label">{row["name"]}</div>', unsafe_allow_html=True)
                         key = f"q_{row['name']}_{row['pack']}"
@@ -180,16 +177,15 @@ if df is not None:
     # --- صفحة المراجعة ---
     elif st.session_state.page == 'review':
         st.markdown('<div class="main-header"><h1>مراجعة الطلبية</h1></div>', unsafe_allow_html=True)
-        st.markdown(f"<div class='info-box'>👤 المندوب: {st.session_state.cust_name}</div>", unsafe_allow_html=True)
         
         items_list = []
         for k, v in st.session_state.cart.items():
-            st.markdown(f"<p style='text-align:right; font-size:20px; color:white;'>✅ {v['name']} : <b>{v['qty']}</b></p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:right; font-size:18px;'>✅ {v['name']} : <b>{v['qty']}</b></p>", unsafe_allow_html=True)
             items_list.append(f"{v['name']}: {v['qty']}")
             
         for item in st.session_state.special_items:
             display_name = f"{item['name']} ({item['pack']})" if item['pack'] else item['name']
-            st.markdown(f"<p style='text-align:right; font-size:20px; color:white;'>✅ {display_name} : <b>{item['qty']}</b></p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:right; font-size:18px;'>✅ {display_name} : <b>{item['qty']}</b></p>", unsafe_allow_html=True)
             items_list.append(f"{display_name}: {item['qty']}")
         
         st.divider()

@@ -23,13 +23,13 @@ def load_data():
 
 df = load_data()
 
-# 3. التنسيق (الخط الأسود السادة والأزرار)
+# 3. التنسيق (تكبير الأزرار طولاً وعرضاً)
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; color: white; direction: rtl; }
     [data-testid="stSidebar"] { display: none; }
     
-    /* الخط أسود سادة وواضح */
+    /* الخط أسود سادة */
     * { font-family: 'Arial', sans-serif !important; }
     
     .main-header { 
@@ -50,41 +50,45 @@ st.markdown("""
         border: 1px solid #2d3748;
         margin-bottom: 20px;
         text-align: right;
-        color: white;
     }
     
-    .section-title { text-align: right !important; font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+    .section-title { text-align: right !important; font-size: 24px; font-weight: bold; margin-bottom: 15px; }
 
-    /* خانات الإدخال - خط أسود سادة */
-    input { 
-        background-color: #ffffcc !important; 
-        color: #000000 !important; /* أسود سادة */
-        font-weight: bold !important; 
-        text-align: right !important;
-        height: 55px !important; 
-        font-size: 20px !important;
-    }
-    
-    .item-label { 
-        background-color: #1E3A8A; color: white; padding: 12px; 
-        border-radius: 8px; font-weight: bold; text-align: right; font-size: 18px;
-    }
-
+    /* الأزرار الصفراء: جعلها ضخمة (عرض 100% وطول 100px) */
     div.stButton > button {
         width: 100% !important;
         background-color: #fca311 !important;
         color: #1E3A8A !important;
         font-weight: 900 !important;
-        height: 70px !important;
-        font-size: 22px !important;
-        border-radius: 12px !important;
-        margin-bottom: 10px !important;
+        height: 100px !important; /* زيادة الطول ليصبح الزر ضخم */
+        font-size: 28px !important; /* تكبير الخط */
+        border-radius: 15px !important;
+        margin-bottom: 15px !important;
+        border: none !important;
+        box-shadow: 0px 6px 0px #b7860b; /* ظل ليعطي عمق للزر */
+    }
+    
+    div.stButton > button:active {
+        transform: translateY(4px);
+        box-shadow: 0px 2px 0px #b7860b;
+    }
+
+    input { 
+        background-color: #ffffcc !important; color: #000000 !important;
+        font-weight: bold !important; text-align: right !important;
+        height: 60px !important; font-size: 22px !important;
+    }
+
+    .item-label { 
+        background-color: #1E3A8A; color: white; padding: 15px; 
+        border-radius: 8px; font-weight: bold; text-align: right; font-size: 20px;
     }
 
     .wa-button {
-        background-color: #25d366; color: white; padding: 20px; 
+        background-color: #25d366; color: white; padding: 25px; 
         border-radius: 15px; text-align: center; font-weight: bold; 
-        font-size: 24px; display: block; width: 100%; text-decoration: none;
+        font-size: 26px; display: block; width: 100%; text-decoration: none;
+        box-shadow: 0px 6px 0px #128c7e;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -107,14 +111,12 @@ if df is not None:
         
         st.markdown("<p class='section-title'>📂 الأقسام:</p>", unsafe_allow_html=True)
         
-        # الأقسام العادية
         for c in df['cat'].unique():
-            if st.button(f"📦 {c}"):
+            if st.button(f"📦 قسم {c}"):
                 st.session_state.sel_cat = c
                 st.session_state.page = 'details'
                 st.rerun()
         
-        # زر أصناف خاصة في الأخير
         if st.button("🌟 أصناف خاصة"):
             st.session_state.page = 'special'
             st.rerun()
@@ -125,16 +127,19 @@ if df is not None:
                 st.session_state.page = 'review'
                 st.rerun()
 
-    # --- صفحة أصناف خاصة (3 خانات) ---
+    # --- صفحة أصناف خاصة ---
     elif st.session_state.page == 'special':
         st.markdown('<div class="main-header"><h1>أصناف خاصة</h1></div>', unsafe_allow_html=True)
         if st.button("🔙 عودة"):
             st.session_state.page = 'home'
             st.rerun()
             
-        sp_name = st.text_input("اسم الصنف:")
-        sp_pack = st.text_input("التعبئة:")
-        sp_qty = st.text_input("العدد:")
+        st.markdown("<p style='text-align:right;'>اسم الصنف:</p>", unsafe_allow_html=True)
+        sp_name = st.text_input("sp1", label_visibility="collapsed")
+        st.markdown("<p style='text-align:right;'>التعبئة:</p>", unsafe_allow_html=True)
+        sp_pack = st.text_input("sp2", label_visibility="collapsed")
+        st.markdown("<p style='text-align:right;'>العدد:</p>", unsafe_allow_html=True)
+        sp_qty = st.text_input("sp3", label_visibility="collapsed")
         
         if st.button("➕ إضافة للطلبية"):
             if sp_name and sp_qty:
@@ -159,7 +164,7 @@ if df is not None:
             with st.expander(f"🔽 {weight}", expanded=True):
                 w_df = cat_df[cat_df['pack'] == weight]
                 for sub in w_df['sub'].unique():
-                    st.markdown(f'<div style="color:#fca311; font-weight:bold; text-align:right; margin:10px 0;">{sub}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="color:#fca311; font-weight:bold; text-align:right; margin:15px 0; font-size:20px;">{sub}</div>', unsafe_allow_html=True)
                     for _, row in w_df[w_df['sub'] == sub].iterrows():
                         st.markdown(f'<div class="item-label">{row["name"]}</div>', unsafe_allow_html=True)
                         key = f"q_{row['name']}_{row['pack']}"
@@ -178,15 +183,13 @@ if df is not None:
         st.markdown(f"<div class='info-box'>👤 المندوب: {st.session_state.cust_name}</div>", unsafe_allow_html=True)
         
         items_list = []
-        # عرض الكل كأصناف عادية بخط أسود
         for k, v in st.session_state.cart.items():
-            st.markdown(f"<p style='text-align:right; font-size:18px; color:white;'>✅ {v['name']} : <b>{v['qty']}</b></p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:right; font-size:20px; color:white;'>✅ {v['name']} : <b>{v['qty']}</b></p>", unsafe_allow_html=True)
             items_list.append(f"{v['name']}: {v['qty']}")
             
         for item in st.session_state.special_items:
-            # دمج الاسم والتعبئة في سطر واحد للمراجعة
             display_name = f"{item['name']} ({item['pack']})" if item['pack'] else item['name']
-            st.markdown(f"<p style='text-align:right; font-size:18px; color:white;'>✅ {display_name} : <b>{item['qty']}</b></p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='text-align:right; font-size:20px; color:white;'>✅ {display_name} : <b>{item['qty']}</b></p>", unsafe_allow_html=True)
             items_list.append(f"{display_name}: {item['qty']}")
         
         st.divider()

@@ -1,136 +1,169 @@
 import streamlit as st
 import pandas as pd
-import random
-from datetime import datetime
-import requests
+import urllib.parse
 
-# --- 1. إعدادات التنسيق والهوية ---
-LOGO_FILE = "IMG_6470.jpeg"
+# 1. إعدادات الصفحة الأساسية (بدون أي تعقيدات)
+st.set_page_config(page_title="طلبيات حلباوي", layout="centered")
 
-st.set_page_config(
-    page_title="شركة حلباوي إخوان", 
-    layout="centered", 
-    page_icon=LOGO_FILE
-)
+# 2. جلب البيانات من جوجل شيت
+SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
+SHEET_NAME = "طلبات"
+DIRECT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
 
-st.markdown(f"""
+@st.cache_data(ttl=1)
+def load_data():
+    try:
+        df = pd.read_csv(DIRECT_URL, header=None).dropna(how='all')
+        df = df.iloc[:, :5]
+        df.columns = ['cat', 'pack', 'sub', 'name', 'sci']
+        return df
+    except:
+        return None
+
+df = load_data()
+
+# 3. تنسيق الواجهة (CSS) - نسخة محسنة لمنع "الزيح"
+st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&display=swap');
-    html, body, [class*="css"] {{ font-family: 'Cairo', sans-serif; direction: rtl; text-align: right; }}
+    /* منع أي هوامش جانبية تسبب الخطوط العمودية */
+    .stApp { background-color: #0E1117; color: white; direction: rtl; }
+    [data-testid="stSidebar"] { display: none; } /* إخفاء القائمة الجانبية تماماً لمنع الانزياح */
     
-    /* إخفاء تعليمات الموبايل المزعجة */
-    div[data-testid="InputInstructions"], div[data-baseweb="helper-text"] {{ display: none !important; }}
-
-    /* جعل اللوغو يظهر بشكل دائري أو بحواف ناعمة ليختفي السواد */
-    .logo-container {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: -40px;
-        margin-bottom: 20px;
-        width: 100%;
-    }}
-    .logo-container img {{
-        border-radius: 20px; /* لتنعيم الحواف السوداء المربعة */
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3); /* ظل خفيف ليعطيه جمالية */
-        border: 2px solid #1E3A8A;
-    }}
-
-    .header-box {{ background-color: #1E3A8A; color: white; text-align: center; padding: 10px; border-radius: 10px; margin-bottom: 20px;}}
-    .return-header-box {{ background-color: #B22222; color: white; text-align: center; padding: 10px; border-radius: 10px; margin-bottom: 20px;}}
+    .main-header { 
+        background-color: #1E3A8A; 
+        text-align: center; 
+        padding: 15px; 
+        border-radius: 10px; 
+        border-bottom: 5px solid #fca311; 
+        margin-bottom: 20px; 
+    }
     
-    /* ... (باقي كود التنسيق للفواتير كما هو) ... */
+    .sub-category-header { 
+        background-color: #2d3748; 
+        color: #fca311; 
+        padding: 8px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        margin-top: 15px; 
+        text-align: right; 
+        border-right: 5px solid #fca311; 
+    }
+    
+    .item-label { 
+        background-color: #1E3A8A; 
+        color: white; 
+        padding: 12px; 
+        border-radius: 5px; 
+        font-weight: bold; 
+        text-align: right; 
+        margin-bottom: 2px;
+    }
+    
+    input { 
+        background-color: #ffffcc !important; 
+        color: black !important; 
+        font-weight: bold !important; 
+        text-align: center !important; 
+        height: 48px !important; 
+        border-radius: 5px !important; 
+    }
+    
+    .stButton button { 
+        background-color: #fca311; 
+        color: #1E3A8A !important; 
+        font-weight: bold; 
+        border-radius: 10px; 
+        height: 55px; 
+        width: 100%; 
+        border: none;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- عرض اللوغو في المنتصف بحجم 140 ---
-# هذا السطر سيجبر اللوغو على البقاء في المنتصف دائماً وبحجم معتدل
-st.markdown('<div class="logo-container">', unsafe_allow_html=True)
-st.image(LOGO_FILE, width=140)
-st.markdown('</div>', unsafe_allow_html=True)
+# إدارة حالة التطبيق
+if 'cart' not in st.session_state: st.session_state.cart = {}
+if 'page' not in st.session_state: st.session_state.page = 'home'
+if 'cust_name' not in st.session_state: st.session_state.cust_name = ""
 
-# --- 2. البيانات والوظائف (نفس كودك السابق دون تغيير حرف) ---
-SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
-GID_PRICES = "339292430"
-GID_DATA = "0"
-GID_CUSTOMERS = "155973706" 
+if df is not None:
+    # --- الصفحة الرئيسية ---
+    if st.session_state.page == 'home':
+        st.markdown('<div class="main-header"><h1>طلبيات حلباوي</h1></div>', unsafe_allow_html=True)
+        
+        st.session_state.cust_name = st.text_input("👤 اسم المندوب / الزبون:", value=st.session_state.cust_name)
+        
+        st.write("### 📂 الأقسام:")
+        for c in df['cat'].unique():
+            if st.button(f"📦 {c}"):
+                st.session_state.sel_cat = c
+                st.session_state.page = 'details'
+                st.rerun()
+        
+        if st.session_state.cart:
+            st.divider()
+            if st.button("🛒 مراجعة الطلبية الكاملة وإرسالها"):
+                st.session_state.page = 'review'
+                st.rerun()
 
-@st.cache_data(ttl=60)
-def load_rep_customers(rep_name):
-    try:
-        url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_CUSTOMERS}"
-        df = pd.read_csv(url)
-        rep_df = df[df.iloc[:, 0].astype(str).str.strip() == rep_name.strip()]
-        return {f"{row.iloc[1]} ({row.iloc[2]})": row.iloc[1] for _, row in rep_df.iterrows()}
-    except: return {}
+    # --- صفحة التفاصيل ---
+    elif st.session_state.page == 'details':
+        cat = st.session_state.sel_cat
+        st.markdown(f'<div class="main-header"><h2>{cat}</h2></div>', unsafe_allow_html=True)
+        
+        # أزرار تحكم علوية متساوية
+        c_nav1, c_nav2 = st.columns(2)
+        with c_nav1:
+            if st.button("🏠 الرئيسية"):
+                st.session_state.page = 'home'
+                st.rerun()
+        with c_nav2:
+            if st.button("🛒 مراجعة"):
+                st.session_state.page = 'review'
+                st.rerun()
 
-def get_next_invoice_number():
-    try:
-        url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_DATA}"
-        df = pd.read_csv(url)
-        if 'رقم الفاتوره' in df.columns:
-            valid_nums = pd.to_numeric(df['رقم الفاتوره'], errors='coerce').dropna()
-            if not valid_nums.empty: return str(int(valid_nums.max()) + 1)
-        return "1001"
-    except: return str(random.randint(10000, 99999))
+        cat_df = df[df['cat'] == cat]
+        for weight in cat_df['pack'].unique():
+            with st.expander(f"🔽 {weight}", expanded=True):
+                w_df = cat_df[cat_df['pack'] == weight]
+                for sub in w_df['sub'].unique():
+                    st.markdown(f'<div class="sub-category-header">{sub}</div>', unsafe_allow_html=True)
+                    items = w_df[w_df['sub'] == sub]
+                    for _, row in items.iterrows():
+                        # عرض الاسم والكمية تحت بعض أو بجانب بعض بشكل بسيط جداً لمنع التداخل
+                        st.markdown(f'<div class="item-label">{row["name"]}</div>', unsafe_allow_html=True)
+                        key = f"q_{row['name']}_{row['pack']}"
+                        curr = st.session_state.cart.get(key, {}).get('qty', "")
+                        val = st.text_input("", value=curr, key=key+"_v", label_visibility="collapsed", placeholder="أدخل العدد")
+                        if val:
+                            st.session_state.cart[key] = {'name': row['name'], 'qty': val}
+                        elif val == "" and key in st.session_state.cart:
+                            del st.session_state.cart[key]
 
-@st.cache_data(ttl=60)
-def load_products_from_excel():
-    try:
-        url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_PRICES}"
-        df_p = pd.read_csv(url)
-        df_p.columns = [c.strip() for c in df_p.columns]
-        return pd.Series(df_p.iloc[:, 1].values, index=df_p.iloc[:, 0]).to_dict()
-    except: return {"⚠️ خطأ": 0.0}
-
-PRODUCTS = load_products_from_excel()
-
-def send_to_google_sheets(vat, total_pre, inv_no, customer, representative, date_time, is_ret=False):
-    url = "https://script.google.com/macros/s/AKfycbzi3kmbVyg_MV1Nyb7FwsQpCeneGVGSJKLMpv2YXBJR05v8Y77-Ub2SpvViZWCCp1nyqA/exec"
-    prefix = "(مرتجع) " if is_ret else ""
-    data = {"vat_value": vat, "total_before": total_pre, "invoice_no": inv_no, "cust_name": f"{prefix}{customer}", "rep_name": representative, "date_full": date_time}
-    try:
-        requests.post(url, data=data, timeout=10)
-        return True
-    except: return False
-
-USERS = {"عبد الكريم حوراني": "9900", "محمد الحسيني": "8822", "علي دوغان": "5500", "عزات حلاوي": "6611", "علي حسين حلباوي": "4455", "محمد حسين حلباوي": "3366", "احمد حسين حلباوي": "7722", "علي محمد حلباوي": "6600"}
-
-# إدارة الحالة
-for key in ['logged_in', 'page', 'temp_items', 'confirmed', 'receipt_view', 'is_sent', 'is_return', 'widget_id']:
-    if key not in st.session_state:
-        if key == 'temp_items': st.session_state[key] = []
-        elif key == 'widget_id': st.session_state[key] = 0
-        elif key == 'page': st.session_state[key] = 'login'
-        else: st.session_state[key] = False
-
-def convert_ar_nav(text):
-    n_map = {'٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'}
-    return "".join(n_map.get(c, c) for c in text)
-
-# --- الواجهات ---
-if not st.session_state.logged_in:
-    st.markdown('<div class="header-box"><h1>🔐 دخول المندوبين</h1></div>', unsafe_allow_html=True)
-    user_sel = st.selectbox("إختر اسمك", ["-- اختر --"] + list(USERS.keys()))
-    pwd = st.text_input("كلمة السر", type="password")
-    if st.button("دخول", use_container_width=True):
-        if USERS.get(user_sel) == pwd:
-            st.session_state.logged_in, st.session_state.user_name, st.session_state.page = True, user_sel, 'home'
-            st.rerun()
-
-elif st.session_state.page == 'home':
-    st.markdown('<div class="header-box"><h2>شركة حلباوي إخوان</h2></div>', unsafe_allow_html=True)
-    st.markdown(f'<div style="text-align:center;"><h3>أهلاً بك {st.session_state.user_name}</h3><p style="color:green; font-weight:bold; font-size:18px;">ببركة الصلاة على محمد وآل محمد</p></div>', unsafe_allow_html=True)
-    col_inv, col_ret = st.columns(2)
-    with col_inv:
-        if st.button("📝 فاتورة جديدة", use_container_width=True, type="primary"):
-            st.session_state.page, st.session_state.temp_items, st.session_state.confirmed, st.session_state.is_return = 'order', [], False, False
-            st.session_state.inv_no = get_next_invoice_number()
-            st.rerun()
-    with col_ret:
-        if st.button("🔄 تسجيل مرتجع", use_container_width=True):
-            st.session_state.page, st.session_state.temp_items, st.session_state.confirmed, st.session_state.is_return = 'order', [], False, True
-            st.session_state.inv_no = get_next_invoice_number()
-            st.rerun()
-
-# ... (باقي الكود يكمل هنا بنفس الترتيب السابق) ...
+    # --- صفحة المراجعة النهائية ---
+    elif st.session_state.page == 'review':
+        st.markdown('<div class="main-header"><h1>مراجعة الطلب</h1></div>', unsafe_allow_html=True)
+        
+        if not st.session_state.cart:
+            st.warning("لم تختر أي أصناف")
+            if st.button("🔙 عودة"):
+                st.session_state.page = 'home'
+                st.rerun()
+        else:
+            st.write(f"👤 **الزبون:** {st.session_state.cust_name}")
+            final_msg = []
+            for k, v in st.session_state.cart.items():
+                st.markdown(f"✅ {v['name']} : **{v['qty']}**")
+                final_msg.append(f"{v['name']}: {v['qty']}")
+            
+            st.divider()
+            if st.button("🚀 إرسال عبر واتساب"):
+                if st.session_state.cust_name:
+                    order_text = f"طلبية: {st.session_state.cust_name}\n" + "\n".join(final_msg)
+                    url = f"https://api.whatsapp.com/send?phone=9613220893&text={urllib.parse.quote(order_text)}"
+                    st.markdown(f'<a href="{url}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#25d366; color:white; padding:15px; border-radius:10px; border:none; font-weight:bold;">تأكيد وفتح واتساب ✅</button></a>', unsafe_allow_html=True)
+                else:
+                    st.error("يرجى كتابة اسم الزبون أولاً")
+            
+            if st.button("➕ إضافة أصناف أخرى"):
+                st.session_state.page = 'home'
+                st.rerun()

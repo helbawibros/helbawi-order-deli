@@ -23,84 +23,78 @@ def load_data():
 
 df = load_data()
 
-# 3. التنسيق المطور (خطوط أكبر وأزرار عريضة)
+# 3. التنسيق المطور (أزرار عريضة ومحاذاة يمين)
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; color: white; direction: rtl; }
     [data-testid="stSidebar"] { display: none; }
     
-    /* الخانة الزرقاء: تكبير الخط بشكل ملحوظ */
+    /* الخانة الزرقاء العلويّة */
     .main-header { 
         background-color: #1E3A8A; 
         text-align: center; 
-        padding: 30px 15px; 
+        padding: 35px 10px; 
         border-radius: 15px; 
         border-bottom: 8px solid #fca311; 
         margin-bottom: 25px; 
     }
-    .main-header h1 { 
-        margin: 0; 
-        font-size: 35px !important; /* حجم كبير جداً */
-        color: white; 
-        font-weight: 900;
-    }
-    .main-header p { 
-        margin: 10px 0 0 0; 
-        font-size: 22px; 
-        color: #fca311; 
-        font-weight: bold; 
-    }
+    .main-header h1 { margin: 0; font-size: 40px !important; color: white; font-weight: 900; }
+    .main-header p { margin: 10px 0 0 0; font-size: 24px; color: #fca311; font-weight: bold; }
 
-    /* بيانات المندوب */
+    /* محاذاة النصوص لليمين (المندوب والتوقيت والمدخلات) */
     .info-box {
         background-color: #1c2333;
         padding: 15px;
         border-radius: 10px;
         border: 1px solid #2d3748;
-        margin-bottom: 25px;
-        font-size: 16px;
-        text-align: right;
+        margin-bottom: 20px;
+        font-size: 18px;
+        text-align: right; /* يمين */
     }
     
+    label, p, span, .stMarkdown { text-align: right !important; width: 100%; }
+
     .sub-category-header { 
-        background-color: #2d3748; color: #fca311; padding: 10px; 
+        background-color: #2d3748; color: #fca311; padding: 12px; 
         border-radius: 5px; font-weight: bold; margin-top: 20px; 
         text-align: right; border-right: 8px solid #fca311; 
+        font-size: 20px;
     }
     
     .item-label { 
         background-color: #1E3A8A; color: white; padding: 15px; 
-        border-radius: 8px; font-weight: bold; text-align: right; margin-bottom: 3px;
-        font-size: 18px;
+        border-radius: 8px; font-weight: bold; text-align: right; 
+        margin-bottom: 3px; font-size: 20px;
     }
     
+    /* خانة إدخال الأرقام (أصفر مع محاذاة يمين) */
     input { 
         background-color: #ffffcc !important; color: black !important; 
-        font-weight: bold !important; text-align: center !important; 
-        height: 55px !important; border-radius: 8px !important; 
-        font-size: 20px !important;
+        font-weight: bold !important; text-align: right !important; /* يمين */
+        height: 60px !important; border-radius: 8px !important; 
+        font-size: 22px !important; padding-right: 15px !important;
     }
     
-    /* الأزرار الصفراء العريضة جداً */
+    /* الأزرار الصفراء (كبيرة جداً وبعرض الشاشة) */
     .stButton button { 
         background-color: #fca311 !important; 
         color: #1E3A8A !important; 
         font-weight: 900 !important; 
         border-radius: 12px !important; 
-        height: 70px !important; /* زيادة الارتفاع */
+        height: 80px !important; /* ارتفاع ضخم */
         width: 100% !important; 
-        display: block !important;
-        font-size: 22px !important; /* تكبير الخط داخل الزر */
-        margin-bottom: 15px !important;
+        font-size: 26px !important; /* خط كبير جداً */
+        margin-top: 10px !important;
         border: none !important;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
     }
     
-    /* زر العودة الخاص بالمراجعة */
-    .secondary-btn button {
-        background-color: #2d3748 !important;
-        color: white !important;
-        height: 50px !important;
-        font-size: 16px !important;
+    /* تنسيق الواتساب */
+    .wa-button {
+        display: block; width: 100%; background-color: #25d366; 
+        color: white; padding: 25px; border-radius: 15px; 
+        text-align: center; font-weight: bold; font-size: 24px; 
+        text-decoration: none; margin-top: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -124,14 +118,15 @@ if df is not None:
         
         st.markdown(f'''
             <div class="info-box">
-                🗓️ {now} <br>
+                🗓️ الوقت: {now} <br>
                 👤 المندوب: {st.session_state.cust_name if st.session_state.cust_name else "---"}
             </div>
         ''', unsafe_allow_html=True)
 
-        st.session_state.cust_name = st.text_input("ادخل اسم المندوب / الزبون هنا:", value=st.session_state.cust_name)
+        st.markdown("<p style='font-weight:bold; font-size:18px;'>👤 اسم المندوب / الزبون:</p>", unsafe_allow_html=True)
+        st.session_state.cust_name = st.text_input("cust_label", value=st.session_state.cust_name, label_visibility="collapsed")
         
-        st.write("### 📂 الأقسام المتاحة:")
+        st.write("### 📂 اختر القسم:")
         for c in df['cat'].unique():
             if st.button(f"📦 قسم {c}"):
                 st.session_state.sel_cat = c
@@ -140,7 +135,7 @@ if df is not None:
         
         if st.session_state.cart:
             st.divider()
-            if st.button("🛒 مراجعة وتثبيت الطلب"):
+            if st.button("🛒 مراجعة وتثبيت الطلبية"):
                 st.session_state.page = 'review'
                 st.rerun()
 
@@ -149,7 +144,7 @@ if df is not None:
         cat = st.session_state.sel_cat
         st.markdown(f'<div class="main-header"><h1>{cat}</h1><p>شركة حلباوي إخوان</p></div>', unsafe_allow_html=True)
         
-        if st.button("🔙 العودة للقائمة الرئيسية"):
+        if st.button("🔙 العودة للقائمة"):
             st.session_state.page = 'home'
             st.rerun()
 
@@ -164,39 +159,38 @@ if df is not None:
                         st.markdown(f'<div class="item-label">{row["name"]}</div>', unsafe_allow_html=True)
                         key = f"q_{row['name']}_{row['pack']}"
                         curr = st.session_state.cart.get(key, {}).get('qty', "")
-                        val = st.text_input("", value=curr, key=key+"_v", label_visibility="collapsed", placeholder="0")
+                        
+                        st.markdown("<p style='font-size:14px; margin-bottom:0;'>🔢 أدخل العدد:</p>", unsafe_allow_html=True)
+                        val = st.text_input("", value=curr, key=key+"_v", label_visibility="collapsed")
                         if val:
                             st.session_state.cart[key] = {'name': row['name'], 'qty': val, 'cat': row['cat']}
                         elif val == "" and key in st.session_state.cart:
                             del st.session_state.cart[key]
         
         st.divider()
-        if st.button("✅ إنهاء مراجعة هذا القسم"):
+        if st.button("✅ تثبيت ومراجعة"):
             st.session_state.page = 'review'
             st.rerun()
 
-    # --- صفحة المراجعة النهائية (مع خيارات العودة للأقسام) ---
+    # --- صفحة المراجعة النهائية ---
     elif st.session_state.page == 'review':
         st.markdown('<div class="main-header"><h1>مراجعة وتثبيت</h1><p>حلباوي إخوان</p></div>', unsafe_allow_html=True)
         
         if not st.session_state.cart:
             st.warning("السلة فارغة")
-            if st.button("🏠 العودة للرئيسية"):
+            if st.button("🏠 العودة"):
                 st.session_state.page = 'home'
                 st.rerun()
         else:
-            st.markdown(f"**👤 المندوب:** {st.session_state.cust_name} <br> **⏰ التوقيت:** {now}", unsafe_allow_html=True)
-            st.write("---")
+            st.markdown(f"<div class='info-box'>👤 المندوب: {st.session_state.cust_name} <br> ⏰ التوقيت: {now}</div>", unsafe_allow_html=True)
             
             final_msg = []
             for k, v in st.session_state.cart.items():
-                st.markdown(f"✅ {v['name']} : **{v['qty']}**")
+                st.markdown(f"<p style='text-align:right; font-size:20px;'>✅ {v['name']} : <b>{v['qty']}</b></p>", unsafe_allow_html=True)
                 final_msg.append(f"{v['name']}: {v['qty']}")
             
             st.divider()
-            
-            # قسم "تعديل أو إضافة" داخل صفحة المراجعة
-            st.write("### ➕ هل تريد إضافة المزيد؟")
+            st.write("### ➕ إضافة أصناف من أقسام أخرى:")
             for c in df['cat'].unique():
                 if st.button(f"العودة لـ {c}"):
                     st.session_state.sel_cat = c
@@ -204,11 +198,10 @@ if df is not None:
                     st.rerun()
             
             st.divider()
-            
             if st.button("🚀 إرسال الطلبية النهائية عبر واتساب"):
                 if st.session_state.cust_name:
                     order_text = f"طلبية: {st.session_state.cust_name}\nالتوقيت: {now}\n" + "\n".join(final_msg)
                     url = f"https://api.whatsapp.com/send?phone=9613220893&text={urllib.parse.quote(order_text)}"
-                    st.markdown(f'<a href="{url}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#25d366; color:white; padding:20px; border-radius:15px; border:none; font-weight:bold; cursor:pointer; font-size:22px;">تأكيد الإرسال النهائي ✅</button></a>', unsafe_allow_html=True)
+                    st.markdown(f'<a href="{url}" target="_blank" class="wa-button">تأكيد الإرسال النهائي ✅</a>', unsafe_allow_html=True)
                 else:
-                    st.error("الرجاء إدخال اسم المندوب في الصفحة الرئيسية أولاً")
+                    st.error("الرجاء إدخال اسم المندوب أولاً")

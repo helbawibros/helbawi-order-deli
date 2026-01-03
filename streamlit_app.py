@@ -29,7 +29,6 @@ st.markdown("""
     .stApp { background-color: #0E1117; color: white; direction: rtl; }
     [data-testid="stSidebar"] { display: none; }
     
-    /* الخانة الزرقاء العلويّة */
     .main-header { 
         background-color: #1E3A8A; 
         text-align: center; 
@@ -41,7 +40,6 @@ st.markdown("""
     .main-header h1 { margin: 0; font-size: 35px !important; color: white; font-weight: 900; }
     .main-header p { margin: 10px 0 0 0; font-size: 22px; color: #fca311; font-weight: bold; }
 
-    /* محاذاة النصوص لليمين */
     .info-box {
         background-color: #1c2333;
         padding: 15px;
@@ -65,7 +63,6 @@ st.markdown("""
         margin-bottom: 3px; font-size: 20px;
     }
     
-    /* خانة إدخال الأرقام */
     input { 
         background-color: #ffffcc !important; color: black !important; 
         font-weight: bold !important; text-align: right !important;
@@ -73,7 +70,6 @@ st.markdown("""
         font-size: 22px !important;
     }
     
-    /* فرض عرض الأزرار بالكامل */
     div.stButton > button {
         width: 100% !important;
         background-color: #fca311 !important;
@@ -86,10 +82,6 @@ st.markdown("""
         border: none !important;
     }
 
-    /* زر الواتساب الأخضر */
-    .wa-link {
-        text-decoration: none;
-    }
     .wa-button {
         background-color: #25d366;
         color: white;
@@ -101,12 +93,14 @@ st.markdown("""
         display: block;
         width: 100%;
         margin-top: 20px;
+        text-decoration: none;
     }
     </style>
     """, unsafe_allow_html=True)
 
 # إدارة الحالة
 if 'cart' not in st.session_state: st.session_state.cart = {}
+if 'special_items' not in st.session_state: st.session_state.special_items = []
 if 'page' not in st.session_state: st.session_state.page = 'home'
 if 'cust_name' not in st.session_state: st.session_state.cust_name = ""
 
@@ -115,36 +109,63 @@ now = datetime.now().strftime("%Y-%m-%d | %H:%M")
 if df is not None:
     # --- الصفحة الرئيسية ---
     if st.session_state.page == 'home':
-        st.markdown('''
-            <div class="main-header">
-                <h1>طلبيات المندوبين</h1>
-                <p>شركة حلباوي إخوان</p>
-            </div>
-        ''', unsafe_allow_html=True)
-        
+        st.markdown('''<div class="main-header"><h1>طلبيات المندوبين</h1><p>شركة حلباوي إخوان</p></div>''', unsafe_allow_html=True)
         st.markdown(f'<div class="info-box">🗓️ الوقت: {now} <br> 👤 المندوب: {st.session_state.cust_name if st.session_state.cust_name else "---"}</div>', unsafe_allow_html=True)
 
         st.markdown("<p style='text-align:right; font-weight:bold;'>👤 اسم المندوب / الزبون:</p>", unsafe_allow_html=True)
         st.session_state.cust_name = st.text_input("name_input", value=st.session_state.cust_name, label_visibility="collapsed")
         
         st.write("### 📂 الأقسام:")
+        # إضافة الزر الاستثنائي في البداية
+        if st.button("🌟 أصناف خاصة (إضافة يدوية)"):
+            st.session_state.page = 'special'
+            st.rerun()
+
         for c in df['cat'].unique():
             if st.button(f"📦 قسم {c}"):
                 st.session_state.sel_cat = c
                 st.session_state.page = 'details'
                 st.rerun()
         
-        if st.session_state.cart:
+        if st.session_state.cart or st.session_state.special_items:
             st.divider()
             if st.button("🛒 مراجعة وتثبيت الطلبية"):
                 st.session_state.page = 'review'
                 st.rerun()
 
-    # --- صفحة التفاصيل ---
+    # --- صفحة الأصناف الخاصة (الاستثنائية) ---
+    elif st.session_state.page == 'special':
+        st.markdown('''<div class="main-header"><h1>أصناف خاصة</h1><p>إضافة طلبية يدوية</p></div>''', unsafe_allow_html=True)
+        
+        if st.button("🔙 العودة للقائمة"):
+            st.session_state.page = 'home'
+            st.rerun()
+            
+        st.write("### أدخل تفاصيل الصنف:")
+        sp_name = st.text_input("اسم الصنف:")
+        sp_qty = st.text_input("العدد / الكمية:")
+        
+        if st.button("➕ إضافة إلى السلة"):
+            if sp_name and sp_qty:
+                st.session_state.special_items.append({'name': sp_name, 'qty': sp_qty})
+                st.success(f"تم إضافة {sp_name} للطلبية")
+            else:
+                st.error("يرجى ملء الخانتين")
+
+        if st.session_state.special_items:
+            st.divider()
+            st.write("⚠️ الأصناف المضافة يدوياً:")
+            for item in st.session_state.special_items:
+                st.write(f"- {item['name']}: {item['qty']}")
+            
+        if st.button("✅ تثبيت ومراجعة"):
+            st.session_state.page = 'review'
+            st.rerun()
+
+    # --- صفحة التفاصيل (الأقسام العادية) ---
     elif st.session_state.page == 'details':
         cat = st.session_state.sel_cat
         st.markdown(f'<div class="main-header"><h1>{cat}</h1><p>شركة حلباوي إخوان</p></div>', unsafe_allow_html=True)
-        
         if st.button("🔙 العودة للقائمة"):
             st.session_state.page = 'home'
             st.rerun()
@@ -160,10 +181,8 @@ if df is not None:
                         key = f"q_{row['name']}_{row['pack']}"
                         curr = st.session_state.cart.get(key, {}).get('qty', "")
                         val = st.text_input("العدد", value=curr, key=key+"_v", label_visibility="collapsed")
-                        if val:
-                            st.session_state.cart[key] = {'name': row['name'], 'qty': val}
-                        elif val == "" and key in st.session_state.cart:
-                            del st.session_state.cart[key]
+                        if val: st.session_state.cart[key] = {'name': row['name'], 'qty': val}
+                        elif val == "" and key in st.session_state.cart: del st.session_state.cart[key]
         
         if st.button("✅ تثبيت ومراجعة"):
             st.session_state.page = 'review'
@@ -173,7 +192,7 @@ if df is not None:
     elif st.session_state.page == 'review':
         st.markdown('<div class="main-header"><h1>مراجعة وتثبيت</h1><p>حلباوي إخوان</p></div>', unsafe_allow_html=True)
         
-        if not st.session_state.cart:
+        if not st.session_state.cart and not st.session_state.special_items:
             st.warning("السلة فارغة")
             if st.button("🏠 العودة"):
                 st.session_state.page = 'home'
@@ -182,23 +201,20 @@ if df is not None:
             st.markdown(f"<div class='info-box'>👤 المندوب: {st.session_state.cust_name} <br> ⏰ التوقيت: {now}</div>", unsafe_allow_html=True)
             
             items_list = []
+            # الأصناف العادية
             for k, v in st.session_state.cart.items():
                 st.markdown(f"<p style='text-align:right; font-size:18px;'>✅ {v['name']} : <b>{v['qty']}</b></p>", unsafe_allow_html=True)
                 items_list.append(f"{v['name']}: {v['qty']}")
             
-            st.divider()
-            st.write("### ➕ إضافة أصناف أخرى:")
-            for c in df['cat'].unique():
-                if st.button(f"العودة لـ {c}"):
-                    st.session_state.sel_cat = c
-                    st.session_state.page = 'details'
-                    st.rerun()
+            # الأصناف الخاصة
+            for item in st.session_state.special_items:
+                st.markdown(f"<p style='text-align:right; font-size:18px; color:#fca311;'>⭐ {item['name']} (صنف خاص) : <b>{item['qty']}</b></p>", unsafe_allow_html=True)
+                items_list.append(f"{item['name']} (خاص): {item['qty']}")
             
             st.divider()
             if st.button("🚀 إرسال الطلب للشركة"):
                 if st.session_state.cust_name:
                     order_text = f"طلبية: {st.session_state.cust_name}\nالتوقيت: {now}\n" + "\n".join(items_list)
                     url = f"https://api.whatsapp.com/send?phone=9613220893&text={urllib.parse.quote(order_text)}"
-                    st.markdown(f'<a href="{url}" target="_blank" class="wa-link"><div class="wa-button">فتح واتساب للإرسال النهائي ✅</div></a>', unsafe_allow_html=True)
-                else:
-                    st.error("الرجاء إدخال اسم المندوب")
+                    st.markdown(f'<a href="{url}" target="_blank" class="wa-button">فتح واتساب للإرسال النهائي ✅</a>', unsafe_allow_html=True)
+                else: st.error("الرجاء إدخال اسم المندوب")

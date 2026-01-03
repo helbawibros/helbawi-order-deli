@@ -5,18 +5,19 @@ import urllib.parse
 # إعدادات الصفحة
 st.set_page_config(page_title="حلباوي إخوان", layout="wide")
 
-# 1. الرابط المباشر المحدث بناءً على صورك
-# قمت باستخراج الـ ID الصحيح من لقطة الشاشة الخاصة بك
+# 1. الرابط المباشر (تعديل تقني لضمان السحب)
+# قمنا بإضافة كود إجباري لسحب ورقة "طلبات" تحديداً
 SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
-
-# سنستخدم رابطاً عاماً يسحب الورقة الأولى تلقائياً لتجنب خطأ الـ GID
-DIRECT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
+SHEET_NAME = "طلبات" # اسم الورقة كما يظهر في أسفل ملفك
+DIRECT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
 
 @st.cache_data(ttl=1)
 def load_data():
     try:
-        # قراءة البيانات مباشرة
+        # قراءة البيانات مع فرض استردادها كـ CSV
         df = pd.read_csv(DIRECT_URL, header=None).dropna(how='all')
+        # اختيار أول 5 أعمدة فقط لضمان مطابقة الكود لملفك
+        df = df.iloc[:, :5]
         df.columns = ['cat', 'pack', 'sub', 'name', 'sci']
         return df
     except Exception as e:
@@ -24,7 +25,7 @@ def load_data():
 
 df = load_data()
 
-# تصميم واجهة الهاتف
+# تصميم الواجهة للهاتف
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; color: white; direction: rtl; }
@@ -40,9 +41,9 @@ if 'page' not in st.session_state: st.session_state.page = 'home'
 
 # التحقق من البيانات
 if df is None or df.empty:
-    st.error("⚠️ فشل في سحب البيانات.")
-    st.info("تأكد من فتح الرابط في متصفحك مرة واحدة لتنشيطه من طرف جوجل.")
-    if st.button("🔄 محاولة تحديث الاتصال"):
+    st.error("⚠️ لم يتم العثور على بيانات في ورقة 'طلبات'.")
+    st.info("تأكد من أن اسم الورقة في أسفل الملف هو 'طلبات' بالضبط.")
+    if st.button("🔄 محاولة التحديث"):
         st.cache_data.clear()
         st.rerun()
 else:
@@ -50,6 +51,7 @@ else:
     if st.session_state.page == 'home':
         st.markdown('<div class="header"><h1>طلبيات حلباوي</h1></div>', unsafe_allow_html=True)
         
+        # استخراج الأقسام (حبوب، بهارات)
         cats = df['cat'].unique()
         for c in cats:
             if st.button(f"📦 {c}"):
@@ -61,11 +63,11 @@ else:
             st.divider()
             cust = st.text_input("👤 اسم الزبون:")
             if st.button("✅ إرسال عبر واتساب"):
-                msg = f"طلبية: {cust}\n" + "\n".join([f"{k}: {v}" for k, v in st.session_state.cart.items()])
-                url = f"https://api.whatsapp.com/send?phone=9613220893&text={urllib.parse.quote(msg)}"
+                order_msg = f"طلبية: {cust}\n" + "\n".join([f"{k}: {v}" for k, v in st.session_state.cart.items()])
+                url = f"https://api.whatsapp.com/send?phone=9613220893&text={urllib.parse.quote(order_msg)}"
                 st.markdown(f'<a href="{url}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#25d366; color:white; padding:15px; border-radius:10px; border:none; font-weight:bold;">تأكيد وفتح واتساب</button></a>', unsafe_allow_html=True)
 
-    # --- صفحة المنتجات ---
+    # --- صفحة التفاصيل ---
     elif st.session_state.page == 'details':
         cat = st.session_state.sel_cat
         st.markdown(f'<div class="header"><h2>{cat}</h2></div>', unsafe_allow_html=True)
@@ -76,9 +78,10 @@ else:
             with c1:
                 st.markdown(f'<div class="item-card">{row["name"]} ({row["pack"]})</div>', unsafe_allow_html=True)
             with c2:
-                key = f"q_{row['sci']}_{row['pack']}"
-                current = st.session_state.cart.get(row['name'], "")
-                val = st.text_input("", value=current, key=key, label_visibility="collapsed")
+                # مفتاح فريد لخانة الإدخال
+                key = f"q_{row['name']}_{row['pack']}"
+                current_val = st.session_state.cart.get(row['name'], "")
+                val = st.text_input("", value=current_val, key=key, label_visibility="collapsed")
                 if val and val.isdigit() and int(val) > 0:
                     st.session_state.cart[row['name']] = val
                 elif val == "0" and row['name'] in st.session_state.cart:

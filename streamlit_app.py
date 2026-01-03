@@ -1,155 +1,149 @@
 import streamlit as st
 import urllib.parse
 
-# 1. إعدادات الصفحة
-st.set_page_config(page_title="شركة حلباوي إخوان - نظام الطلبيات", layout="wide")
+# 1. إعدادات الصفحة والجماليات
+st.set_page_config(page_title="حلباوي إخوان - نظام الطلبيات الذكي", layout="wide")
 
-# 2. تصميم الواجهة (نفس الروح مع تحسينات طفيفة للوضوح)
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; }
     .category-header { 
-        background-color: #e9ecef; color: #1E3A8A; padding: 8px 12px; border-radius: 5px; 
-        font-weight: bold; font-size: 16px; margin-top: 15px; border-right: 5px solid #fca311; text-align: right;
+        background-color: #e9ecef; color: #1E3A8A; padding: 8px; border-radius: 5px; 
+        font-weight: bold; margin-top: 15px; border-right: 5px solid #fca311; text-align: right;
     }
     .item-box { 
-        display: inline-block; color: white !important; font-weight: bold !important; 
-        font-size: 17px !important; background-color: #1E3A8A !important; 
-        padding: 5px 12px; border-radius: 8px; text-align: right; min-width: 140px; width: 100%;
+        color: white !important; font-weight: bold !important; font-size: 16px !important; 
+        background-color: #1E3A8A !important; padding: 8px; border-radius: 8px; text-align: right; width: 100%;
     }
-    input { 
-        background-color: #ffffcc !important; color: black !important; font-weight: bold !important; 
-        height: 40px !important; font-size: 20px !important;
-    }
-    .header-box { background-color: #1E3A8A; color: white; text-align: center; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-    .stButton button { background-color: #fca311; color: #1E3A8A !important; font-weight: bold; height: 50px; }
-    .review-card { background-color: #1c212d; border: 1px solid #fca311; padding: 15px; border-radius: 10px; color: white; margin-bottom: 10px; }
+    input { background-color: #ffffcc !important; color: black !important; font-weight: bold !important; font-size: 18px !important; }
+    .header-box { background-color: #1E3A8A; color: white; text-align: center; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+    .stButton button { background-color: #fca311; color: #1E3A8A !important; font-weight: bold; height: 45px; width: 100%; }
+    .review-panel { background-color: #1c212d; border: 2px solid #fca311; padding: 15px; border-radius: 10px; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
-# إدارة الحالة
+# 2. إدارة البيانات (State)
 if 'page' not in st.session_state: st.session_state.page = 'home'
 if 'cart' not in st.session_state: st.session_state.cart = []
 if 'customer' not in st.session_state: st.session_state.customer = ""
 
 RECEIVING_NUMBER = "9613220893"
 
-def ar_to_en_num(text):
+def ar_to_en(text):
     return text.translate(str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789'))
 
-# دالة العرض المزدوج (اسم للمندوب واسم للسيستم)
-def render_list_dual(items_dict, key_suffix):
-    for display_name, billing_name in items_dict.items():
-        if display_name.startswith("-"):
-            st.markdown(f'<div class="category-header">{display_name[1:]}</div>', unsafe_allow_html=True)
+def render_items(items_dict, prefix):
+    for disp, bill in items_dict.items():
+        if disp.startswith("-"):
+            st.markdown(f'<div class="category-header">{disp[1:]}</div>', unsafe_allow_html=True)
         else:
-            c1, c2 = st.columns([2.5, 1])
-            with c1: st.markdown(f'<div class="item-box">{display_name}</div>', unsafe_allow_html=True)
-            with c2:
-                q = st.text_input("", key=f"{key_suffix}_{display_name}", label_visibility="collapsed", placeholder="0")
-                if q:
-                    en_q = ar_to_en_num(q)
-                    if en_q.isdigit() and int(en_q) > 0:
-                        # نبحث إذا كان الصنف موجود مسبقاً في السلة لتحديثه
-                        st.session_state.cart = [i for i in st.session_state.cart if i['bill'] != billing_name]
-                        st.session_state.cart.append({"disp": display_name, "bill": billing_name, "qty": en_q})
+            col_txt, col_in = st.columns([3, 1])
+            with col_txt: st.markdown(f'<div class="item-box">{disp}</div>', unsafe_allow_html=True)
+            with col_in:
+                val = st.text_input("", key=f"{prefix}_{bill}", label_visibility="collapsed", placeholder="0")
+                if val:
+                    qty = ar_to_en(val)
+                    if qty.isdigit() and int(qty) > 0:
+                        # تحديث السلة: حذف القديم وإضافة الجديد لنفس الصنف
+                        st.session_state.cart = [i for i in st.session_state.cart if i['bill'] != bill]
+                        st.session_state.cart.append({"disp": disp, "bill": bill, "qty": qty})
 
 # --- الصفحة الرئيسية ---
 if st.session_state.page == 'home':
-    st.image("https://raw.githubusercontent.com/helbawibros/-/main/Logo%20.JPG", use_container_width=True)
-    st.markdown('<div class="header-box"><h1>نظام طلبيات حلباوي إخوان</h1></div>', unsafe_allow_html=True)
-    
-    st.session_state.customer = st.text_input("👤 إسم الزبون / المندوب:", st.session_state.customer)
+    st.markdown('<div class="header-box"><h1>طلبيات حلباوي إخوان</h1></div>', unsafe_allow_html=True)
+    st.session_state.customer = st.text_input("👤 اسم الزبون / المندوب:", st.session_state.customer)
 
-    # مراجعة الطلبية قبل الإرسال
     if st.session_state.cart:
-        st.markdown('<div class="review-card"><h3>📋 مراجعة الطلبية:</h3>', unsafe_allow_html=True)
-        for item in st.session_state.cart:
-            st.write(f"• {item['disp']} ({item['qty']})")
-        
-        if st.button("🚀 إرسال الطلب النهائي عبر واتساب"):
-            if not st.session_state.customer:
-                st.error("الرجاء إدخال اسم الزبون أولاً!")
-            else:
-                msg = f"طلبية مبيعات: *{st.session_state.customer}*\n" + "-"*20 + "\n"
-                for item in st.session_state.cart:
-                    msg += f"{item['bill']} : {item['qty']}\n"
-                st.markdown(f'<a href="https://api.whatsapp.com/send?phone={RECEIVING_NUMBER}&text={urllib.parse.quote(msg)}" target="_blank" style="background:#25d366;color:white;padding:15px;display:block;text-align:center;text-decoration:none;border-radius:10px;font-weight:bold;">تأكيد الإرسال لواتساب ✅</a>', unsafe_allow_html=True)
-        
-        if st.button("🗑️ مسح الطلبية بالكامل"):
-            st.session_state.cart = []; st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container():
+            st.markdown('<div class="review-panel"><h3>📋 مراجعة الطلبية (الأسماء التقنية):</h3>', unsafe_allow_html=True)
+            for item in st.session_state.cart:
+                st.write(f"✅ {item['bill']} — الكمية: {item['qty']}")
+            
+            if st.button("🚀 إرسال الطلبية النهائية عبر واتساب"):
+                if not st.session_state.customer:
+                    st.error("الرجاء إدخال اسم الزبون!")
+                else:
+                    msg = f"طلبية: *{st.session_state.customer}*\n" + "="*15 + "\n"
+                    for i in st.session_state.cart:
+                        msg += f"{i['bill']} : {i['qty']}\n"
+                    st.markdown(f'<a href="https://api.whatsapp.com/send?phone={RECEIVING_NUMBER}&text={urllib.parse.quote(msg)}" target="_blank" style="text-decoration:none;"><button style="width:100%; background-color:#25d366; color:white; padding:15px; border-radius:10px; border:none; font-weight:bold;">تأكيد وفتح واتساب ✅</button></a>', unsafe_allow_html=True)
+            
+            if st.button("🗑️ مسح القائمة"):
+                st.session_state.cart = []; st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("🌾 الحبوب", use_container_width=True): st.session_state.page = 'grains'; st.rerun()
-    with col2:
-        if st.button("🌶️ البهارات", use_container_width=True): st.session_state.page = 'spices'; st.rerun()
-    with col3:
-        if st.button("📋 صنف خاص", use_container_width=True): st.session_state.page = 'special'; st.rerun()
+    st.write("---")
+    c1, c2, c3 = st.columns(3)
+    with c1: 
+        if st.button("🌾 الحبوب"): st.session_state.page = 'grains_page'; st.rerun()
+    with c2:
+        if st.button("🌶️ البهارات"): st.session_state.page = 'spices_page'; st.rerun()
+    with c3:
+        if st.button("📋 صنف خاص"): st.session_state.page = 'special_page'; st.rerun()
 
-# --- نموذج الحبوب ---
-elif st.session_state.page == 'grains':
-    st.markdown('<div class="header-box"><h2>نموذج الحبوب (1000غ/907غ)</h2></div>', unsafe_allow_html=True)
+# --- صفحة الحبوب (بناءً على الصور 1000/907/500/200) ---
+elif st.session_state.page == 'grains_page':
+    st.markdown('<div class="header-box"><h2>قائمة الحبوب الكاملة</h2></div>', unsafe_allow_html=True)
     
     grains_data = {
-        "-الحمص": "",
+        "-حبوب 1000غ / 907غ": "",
         "حمص فحلي 12": "حمص فحلي\"12\"907غ", "حمص فحلي 9": "حمص فحلي\"9\"907غ", "حمص كسر": "حمص كسر 1000غ",
-        "-الفول": "",
         "فول حب": "فول حب 1000غ", "فول مجروش": "فول مجروش 1000غ", "فول عريض": "فول عريض 1000غ",
-        "-فاصوليا": "",
-        "فاصوليا صنوبرية": "فاصوليا صنوبرية 907غ", "فاصوليا حمرا طويلة": "فاصوليا حمرا طويلة 1000غ", "فاصوليا حمرا مدعبلة": "فاصوليا حمرا مدعبلة 1000غ", "فاصوليا عريضة": "فاصوليا عريضة 1000غ",
-        "-عدس": "",
-        "عدس أبيض بلدي": "عدس أبيض بلدي 907غ", "عدس أحمر": "عدس أحمر 907غ", "عدس أحمر موردي": "عدس أحمر موردي 1000غ", "عدس عريض": "عدس عريض 907غ", "عدس مجروش": "عدس مجروش 907غ",
-        "-برغل": "",
-        "برغل أسمر ناعم": "برغل أسمر ناعم 907غ", "برغل أسمر خشن": "برغل أسمر خشن 907غ", "برغل أبيض ناعم": "برغل أبيض ناعم 1000غ", "برغل أبيض خشن": "برغل أبيض خشن 907غ",
-        "-أرز": "",
-        "أرز أمريكي": "أرز أمريكي 907غ", "أرز إيطالي": "أرز إيطالي 907غ", "أرز مصري": "أرز مصري 907غ", "أرز ناعم": "أرز ناعم 1000غ", "أرز بسمتي": "أرز بسمتي 907غ", "أرز عنبري": "أرز عنبري 1000غ",
-        "-طحين وسميد": "",
-        "طحين زيرو": "طحين زيرو 1000غ", "طحين غود ميدل": "طحين غود ميدل 1ك", "طحين غود مارك": "طحين غود مارك 907غ", "طحين فقش": "طحين فقش 1000غ", "طحين أسمر": "طحين أسمر 1000غ", "طحين فرخة": "طحين فرخة 907غ", "سميد": "سميد 907غ",
-        "-متفرقات": "",
-        "كشك بلدي": "*كشك بلدي 1000غ", "فانيليا": "*فانيليا 1000غ", "باكنغ بودر": "*باكنغ بودر 1000غ", "نشاء ناعم": "نشاء ناعم 1000غ", "كعك مطحون": "*كعك مطحون 1000غ", "فريك مجروش": "*فريك مجروش 1000غ", "ذرة بوشار": "ذرة بوشار 1000غ"
+        "فاصوليا صنوبرية": "فاصوليا صنوبرية 907غ", "فاصوليا حمرا طويلة": "فاصوليا حمرا طويلة 1000غ",
+        "عدس أبيض بلدي": "عدس أبيض بلدي 907غ", "عدس أحمر": "عدس أحمر 907غ",
+        "أرز إيطالي": "أرز إيطالي907غ", "أرز بسمتي": "أرز بسمتي 907غ",
+        "طحين زيرو": "طحين زيرو 1000غ", "طحين غود ميدل": "طحين غود ميدل1ك",
+        "كشك بلدي": "*كشك بلدي 1000غ", "فانيليا": "*فانيليا 1000غ",
+        
+        "-أصناف 500غ / 454غ / 200غ": "",
+        "فاصوليا عريضة 500غ": "فاصوليا عريضة500غ", "فول عريض 500غ": "فول عريض500غ",
+        "كاكاو 500غ": "*كاكاو500غ", "ترمس حلو 500غ": "ترمس حلو500غ",
+        "ذرة بوشار 454غ": "ذرة بوشار454غ", "شوفان مبروش 500غ": "شوفان مبروش500غ",
+        "ملوخية 200غ": "ملوخية 200غ", "بامية زهرة 200غ": "بامية زهرة 200غ",
+        "برش جوز الهند 200غ": "برش جوز الهند 200غ", "نشاء ناعم 200غ": "نشاء ناعم 200غ"
     }
+    render_items(grains_data, "GR")
+    if st.button("🔙 حفظ والعودة"): st.session_state.page = 'home'; st.rerun()
+
+# --- صفحة البهارات (500غ / 50غ / 20غ) ---
+elif st.session_state.page == 'spices_page':
+    st.markdown('<div class="header-box"><h2>قائمة البهارات الكاملة</h2></div>', unsafe_allow_html=True)
     
-    render_list_dual(grains_data, "gr")
-    if st.button("🔙 حفظ والعودة للمراجعة"): st.session_state.page = 'home'; st.rerun()
-
-# --- نموذج البهارات ---
-elif st.session_state.page == 'spices':
-    st.markdown('<div class="header-box"><h2>نموذج البهارات (بالدزينة)</h2></div>', unsafe_allow_html=True)
-    
-    with st.expander("🌶️ بهارات 50غ (الأسماء التقنية)", expanded=True):
-        sp_50_data = {
-            "بهار حلو": "*بهار حلو 50غ*12", "فلفل أسود": "*فلفل أسود 50غ*12", "فلفل أحمر": "*فلفل أحمر 50غ*12",
-            "قرفة ناعمة": "*قرفة ناعمة 50غ*12", "سبع بهارات": "*سبع بهارات 50غ*12", "عقدة صفرة": "*عقدة صفرة 50غ*12",
-            "كمون": "*كمون 50غ*12", "كزبرة": "*كزبرة 50غ*12", "يانسون": "*يانسون 50غ*12", "سماق": "*سماق 50غ*12",
-            "بهار دجاج": "*بهار دجاج 50غ*12", "بهار طاووق": "*بهار طاووق 50غ*12", "بهار كبسة": "*بهار كبسة 50غ*12",
-            "بهار شورما لحم": "*بهار شورما لحم 50غ*12", "بهار شورما دجا": "*بهار شورما دجا 50غ*12ج",
-            "بهار مدخن": "*بهار مدخن 50غ*12", "بابريكا مدخن": "*بابريكا مدخن 50غ*12",
-            "حبق": "*حبق 50غ*12", "لوما": "*لوما 50غ*12", "ورق غار": "*ورق غار 50غ*12"
+    with st.expander("🌶️ بهارات 50غ و 20غ (بالدزينة)", expanded=True):
+        spices_small = {
+            "-بهارات 50غ": "",
+            "بهار حلو 50غ": "*بهار حلو 50غ*12", "فلفل أسود 50غ": "*فلفل أسود 50غ*12",
+            "سبع بهارات 50غ": "*سبع بهارات 50غ*12", "عقدة صفرة 50غ": "*عقدة صفرة50غ*12",
+            "بهار دجاج 50غ": "*بهار دجاج 50غ*12", "بهار شورما دجا": "*بهار شورما دجا 50غ*12ج",
+            "كمون حب 50غ": "*كمون حب 50غ*12", "يانسون حب 50غ": "*يانسون حب 50غ*12",
+            
+            "-بهارات 20غ": "",
+            "جوز الطيب ناعم 20غ": "*جوز الطيب ناعم 20غ*12", "محلب ناعم 20غ": "*محلب ناعم 20غ*12",
+            "هال ناعم 20غ": "*هال ناعم 20غ*12", "عصفر 20غ": "*عصفر 20غ*12"
         }
-        render_list_dual(sp_50_data, "s50")
+        render_items(spices_small, "SP_S")
 
-    with st.expander("🍃 بهارات 20غ"):
-        sp_20_data = {
-            "جوز الطيب ناعم": "*جوز الطيب ناعم 20غ*12", "محلب ناعم": "*محلب ناعم 20غ*12", "هال ناعم": "*هال ناعم 20غ*12",
-            "قرنفل ناعم": "*قرنفل ناعم 20غ*12", "زنجبيل ناعم": "*زنجبيل ناعم 20غ*12", "عصفر": "*عصفر 20غ*12"
+    with st.expander("🌿 بهارات 500غ"):
+        spices_500 = {
+            "بهار حلو 500غ": "*بهار حلو 500غ", "فلفل أسود 500غ": "*فلفل أسود 500غ",
+            "سبع بهارات 500غ": "*سبع بهارات 500غ", "عقدة صفرة 500غ": "*عقدة صفرة 500غ",
+            "بهار دجاج 500غ": "*بهار دجاج 500غ", "بهار طاووق 500غ": "*بهار طاووق 500غ"
         }
-        render_list_dual(sp_20_data, "s20")
+        render_items(spices_500, "SP_L")
+        
+    if st.button("🔙 حفظ والعودة"): st.session_state.page = 'home'; st.rerun()
 
-    if st.button("🔙 حفظ والعودة للمراجعة"): st.session_state.page = 'home'; st.rerun()
-
-# --- نموذج صنف خاص ---
-elif st.session_state.page == 'special':
-    st.markdown('<div class="header-box"><h2>📋 صنف بضاعة حسب الطلب</h2></div>', unsafe_allow_html=True)
+# --- صفحة صنف خاص ---
+elif st.session_state.page == 'special_page':
+    st.markdown('<div class="header-box"><h2>📋 بضاعة حسب الطلب</h2></div>', unsafe_allow_html=True)
     sp_name = st.text_input("اسم الصنف:")
-    sp_pack = st.text_input("نوع التعبئة (مثلاً 500غ):")
+    sp_pack = st.text_input("التعبئة (مثلاً 250غ):")
     sp_qty = st.text_input("الكمية:")
     
-    if st.button("✅ إضافة الصنف الخاص"):
+    if st.button("✅ إضافة"):
         if sp_name and sp_qty:
-            full_special_name = f"{sp_name} ({sp_pack})"
-            st.session_state.cart.append({"disp": full_special_name, "bill": f"خاص: {full_special_name}", "qty": ar_to_en_num(sp_qty)})
-            st.success(f"تمت إضافة {sp_name}")
+            bill_name = f"طلب خاص: {sp_name} ({sp_pack})"
+            st.session_state.cart.append({"disp": sp_name, "bill": bill_name, "qty": ar_to_en(sp_qty)})
+            st.success("تمت الإضافة")
             st.session_state.page = 'home'; st.rerun()
     if st.button("🔙 عودة"): st.session_state.page = 'home'; st.rerun()

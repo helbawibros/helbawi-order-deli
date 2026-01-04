@@ -12,31 +12,34 @@ from google.oauth2.service_account import Credentials
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="نظام طلبيات حلباوي", layout="centered")
 
-# --- دالة الربط مع جوجل شيت (النسخة النهائية الفائقة) ---
+# --- دالة الربط مع جوجل شيت (النسخة المطورة لكشف الأخطاء) ---
 def send_to_google_sheets(delegate_name, items_list):
     try:
         # إعداد التصاريح
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         
-        # جلب البيانات وتنظيفها من أي مسافات زائدة قد تسبب خطأ seekable stream
+        # جلب البيانات وتنظيفها
         raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
         service_account_info = json.loads(raw_json)
         
-        # الربط المباشر باستخدام المعلومات النصية
+        # الربط المباشر
         creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
         client = gspread.authorize(creds)
         
         # فتح ملف الإكسل
         sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
         
-        # الدخول للصفحة التي تحمل اسم المندوب
+        # تنظيف اسم المندوب من أي مسافات زائدة
+        target_name = delegate_name.strip()
+        
+        # محاولة فتح الصفحة المطلوبة
         try:
-            worksheet = sheet.worksheet(delegate_name)
-        except:
-            st.error(f"⚠️ لم يتم العثور على صفحة باسم '{delegate_name}'")
+            worksheet = sheet.worksheet(target_name)
+        except Exception:
+            st.error(f"⚠️ لا توجد صفحة باسم '{target_name}' في الإكسل. تأكد من مطابقة الاسم تماماً.")
             return False
 
-        # تحضير الأسطر للإرسال
+        # تحضير البيانات
         rows_to_append = []
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
         for item in items_list:
@@ -46,7 +49,8 @@ def send_to_google_sheets(delegate_name, items_list):
             worksheet.append_rows(rows_to_append)
             return True
     except Exception as e:
-        st.error(f"❌ فشل الاتصال بالإكسل: {e}")
+        # كشف السبب الحقيقي إذا كان هناك خطأ تقني آخر
+        st.error(f"❌ خطأ في النظام: {str(e)}")
         return False
 
 # 2. جلب البيانات (للأصناف)

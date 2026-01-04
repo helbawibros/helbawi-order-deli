@@ -12,18 +12,20 @@ from google.oauth2.service_account import Credentials
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="نظام طلبيات حلباوي", layout="centered")
 
-# --- دالة الربط مع جوجل شيت (النظام المطور باستخدام Secrets) ---
+# --- دالة الربط مع جوجل شيت (النسخة النهائية المصححة) ---
 def send_to_google_sheets(delegate_name, items_list):
     try:
-        # إعداد التصاريح من الـ Secrets مباشرة لمنع التعطيل التلقائي من جوجل
+        # إعداد التصاريح
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         
-        # جلب البيانات من الخزنة السرية (json_data) التي أضفتها أنت في الإعدادات
+        # جلب البيانات من الخزنة السرية وتحويلها من نص إلى قاموس Python
         service_account_info = json.loads(st.secrets["gcp_service_account"]["json_data"])
+        
+        # التعديل الجوهري: استخدام from_service_account_info بدلاً من الملف
         creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
         client = gspread.authorize(creds)
         
-        # فتح ملف الإكسل باستخدام الـ ID الخاص بك
+        # فتح ملف الإكسل
         sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
         
         # الدخول للصفحة التي تحمل اسم المندوب
@@ -43,10 +45,11 @@ def send_to_google_sheets(delegate_name, items_list):
             worksheet.append_rows(rows_to_append)
             return True
     except Exception as e:
+        # إذا ظهر خطأ "seekable bit stream" مجدداً، فهذا يعني أن هناك مشكلة في طريقة قراءة النص
         st.error(f"❌ فشل الاتصال بالإكسل: {e}")
         return False
 
-# 2. جلب البيانات (للأصناف) من ملف الإكسل
+# 2. جلب البيانات (للأصناف)
 SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
 SHEET_NAME = "طلبات"
 DIRECT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
@@ -63,7 +66,7 @@ def load_data():
 
 df = load_data()
 
-# 3. التنسيق الجمالي (CSS)
+# 3. التنسيق (CSS)
 st.markdown("""
     <style>
     html, body, [class*="st-"], div, p, h1, h2, h3, button, input {
@@ -103,7 +106,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# إدارة حالة التطبيق
+# إدارة الحالة
 if 'cart' not in st.session_state: st.session_state.cart = {}
 if 'special_items' not in st.session_state: st.session_state.special_items = []
 if 'page' not in st.session_state: st.session_state.page = 'home'

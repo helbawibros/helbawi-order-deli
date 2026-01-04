@@ -12,47 +12,46 @@ from google.oauth2.service_account import Credentials
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="نظام طلبيات حلباوي", layout="centered")
 
-# --- دالة الربط مع جوجل شيت (النسخة المطورة لكشف الأخطاء) ---
+# --- دالة الربط مع جوجل شيت (نسخة حل الصلاحيات) ---
 def send_to_google_sheets(delegate_name, items_list):
     try:
         # إعداد التصاريح
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         
-        # جلب البيانات وتنظيفها
+        # جلب البيانات من الخزنة السرية
         raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
         service_account_info = json.loads(raw_json)
         
-        # الربط المباشر
+        # الربط
         creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
         client = gspread.authorize(creds)
         
         # فتح ملف الإكسل
         sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
         
-        # تنظيف اسم المندوب من أي مسافات زائدة
-        target_name = delegate_name.strip()
-        
-        # محاولة فتح الصفحة المطلوبة
+        # البحث عن الصفحة (بشكل مرن)
+        target = delegate_name.strip()
         try:
-            worksheet = sheet.worksheet(target_name)
-        except Exception:
-            st.error(f"⚠️ لا توجد صفحة باسم '{target_name}' في الإكسل. تأكد من مطابقة الاسم تماماً.")
+            worksheet = sheet.worksheet(target)
+        except:
+            st.error(f"⚠️ لا توجد صفحة باسم '{target}'.. تأكد من تسمية الصفحات في الإكسل")
             return False
 
-        # تحضير البيانات
-        rows_to_append = []
+        # تحضير الأسطر
+        rows = []
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
         for item in items_list:
-            rows_to_append.append([now_str, item['name'], item['qty'], "بانتظار التصديق"])
+            rows.append([now_str, item['name'], item['qty'], "بانتظار التصديق"])
         
-        if rows_to_append:
-            worksheet.append_rows(rows_to_append)
+        if rows:
+            worksheet.append_rows(rows)
             return True
     except Exception as e:
-        # كشف السبب الحقيقي إذا كان هناك خطأ تقني آخر
+        # إذا ظهر هذا الخطأ بعد الـ Share، سأعرف السبب فوراً
         st.error(f"❌ خطأ في النظام: {str(e)}")
         return False
 
+# --- (باقي الكود الخاص بالواجهات يبقى كما هو تماماً) ---
 # 2. جلب البيانات (للأصناف)
 SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
 SHEET_NAME = "طلبات"
@@ -218,3 +217,4 @@ if df is not None:
                     st.markdown(f'<a href="{url}" target="_blank" class="wa-button">إرسال عبر واتساب الآن ✅</a>', unsafe_allow_html=True)
             else: 
                 st.error("⚠️ يرجى كتابة اسم المندوب أولاً في الصفحة الرئيسية")
+

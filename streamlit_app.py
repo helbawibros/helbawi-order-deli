@@ -1,6 +1,7 @@
 import os
 import time
-os.environ['TZ'] = 'Asia/Beirut' # أو توقيت منطقتك
+import json
+os.environ['TZ'] = 'Asia/Beirut' 
 import streamlit as st
 import pandas as pd
 import urllib.parse
@@ -11,15 +12,18 @@ from google.oauth2.service_account import Credentials
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="نظام طلبيات حلباوي", layout="centered")
 
-# --- دالة الربط مع جوجل شيت (النظام الجديد) ---
+# --- دالة الربط مع جوجل شيت (النظام المطور باستخدام Secrets) ---
 def send_to_google_sheets(delegate_name, items_list):
     try:
-        # إعداد التصاريح
+        # إعداد التصاريح من الـ Secrets مباشرة لمنع التعطيل التلقائي
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = Credentials.from_service_account_file('final_key.json', scopes=scope)
+        
+        # جلب البيانات من الخزنة السرية (json_data)
+        service_account_info = json.loads(st.secrets["gcp_service_account"]["json_data"])
+        creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
         client = gspread.authorize(creds)
         
-        # فتح ملف الإكسل (استخدمت الـ ID الخاص بك)
+        # فتح ملف الإكسل
         sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
         
         # الدخول للصفحة التي تحمل اسم المندوب
@@ -33,7 +37,6 @@ def send_to_google_sheets(delegate_name, items_list):
         rows_to_append = []
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
         for item in items_list:
-            # ترتيب الأعمدة: التاريخ | اسم الصنف | الكمية | الحالة
             rows_to_append.append([now_str, item['name'], item['qty'], "بانتظار التصديق"])
         
         if rows_to_append:
@@ -60,7 +63,7 @@ def load_data():
 
 df = load_data()
 
-# 3. التنسيق (نفس الستايل الخاص بك)
+# 3. التنسيق (CSS)
 st.markdown("""
     <style>
     html, body, [class*="st-"], div, p, h1, h2, h3, button, input {
@@ -113,7 +116,7 @@ if df is not None:
         st.markdown('<div class="main-header"><h1>طلبيات المندوبين</h1><p>شركة حلباوي إخوان</p></div>', unsafe_allow_html=True)
         st.markdown(f'<div class="info-box">🗓️ {now} <br> 👤 المندوب الحالي: {st.session_state.cust_name if st.session_state.cust_name else "---"}</div>', unsafe_allow_html=True)
 
-        st.markdown("<p style='text-align:right; font-weight:bold;'>👤 اختر أو اكتب اسم المندوب (مطابق لاسم الصفحة):</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:right; font-weight:bold;'>👤 اكتب اسم المندوب (مطابق تماماً لاسم الصفحة في الإكسل):</p>", unsafe_allow_html=True)
         st.session_state.cust_name = st.text_input("n_in", value=st.session_state.cust_name, label_visibility="collapsed")
         
         st.markdown("<p style='text-align:right; font-weight:bold;'>📂 الأقسام:</p>", unsafe_allow_html=True)
@@ -198,13 +201,11 @@ if df is not None:
         st.divider()
         if st.button("🚀 إرسال الطلب للشركة وتحديث الجرد"):
             if st.session_state.cust_name:
-                # 1. محاولة الإرسال لجوجل شيت
                 with st.spinner('جاري تحديث الجرد في الإكسل...'):
                     success = send_to_google_sheets(st.session_state.cust_name, final_list)
                 
                 if success:
                     st.success("✅ تم تحديث جرد الفان بنجاح!")
-                    # 2. تجهيز واتساب
                     order_text = f"طلبية: {st.session_state.cust_name}\nالتوقيت: {now}\n" + "\n".join([f"{i['name']}: {i['qty']}" for i in final_list])
                     url = f"https://api.whatsapp.com/send?phone=9613220893&text={urllib.parse.quote(order_text)}"
                     st.markdown(f'<a href="{url}" target="_blank" class="wa-button">إرسال عبر واتساب الآن ✅</a>', unsafe_allow_html=True)

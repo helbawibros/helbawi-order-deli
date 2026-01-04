@@ -12,29 +12,27 @@ from google.oauth2.service_account import Credentials
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="نظام طلبيات حلباوي", layout="centered")
 
-# --- دالة الربط مع جوجل شيت (نسخة حل الصلاحيات) ---
+# --- دالة الربط مع جوجل شيت (النسخة النهائية الفولاذية) ---
 def send_to_google_sheets(delegate_name, items_list):
     try:
-        # إعداد التصاريح
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         
-        # جلب البيانات من الخزنة السرية
+        # جلب وتنظيف البيانات
         raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
-        service_account_info = json.loads(raw_json)
+        service_account_info = json.loads(raw_json, strict=False)
         
-        # الربط
         creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
         client = gspread.authorize(creds)
         
         # فتح ملف الإكسل
         sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
         
-        # البحث عن الصفحة (بشكل مرن)
+        # اختيار الصفحة بناءً على اسم المندوب
         target = delegate_name.strip()
         try:
             worksheet = sheet.worksheet(target)
         except:
-            st.error(f"⚠️ لا توجد صفحة باسم '{target}'.. تأكد من تسمية الصفحات في الإكسل")
+            st.error(f"⚠️ لم يتم العثور على صفحة باسم '{target}'")
             return False
 
         # تحضير الأسطر
@@ -47,11 +45,10 @@ def send_to_google_sheets(delegate_name, items_list):
             worksheet.append_rows(rows)
             return True
     except Exception as e:
-        # إذا ظهر هذا الخطأ بعد الـ Share، سأعرف السبب فوراً
-        st.error(f"❌ خطأ في النظام: {str(e)}")
+        st.error(f"❌ خطأ تقني: {str(e)}")
         return False
 
-# --- (باقي الكود الخاص بالواجهات يبقى كما هو تماماً) ---
+# (باقي كود الواجهات يبقى كما هو)
 # 2. جلب البيانات (للأصناف)
 SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
 SHEET_NAME = "طلبات"
@@ -217,4 +214,3 @@ if df is not None:
                     st.markdown(f'<a href="{url}" target="_blank" class="wa-button">إرسال عبر واتساب الآن ✅</a>', unsafe_allow_html=True)
             else: 
                 st.error("⚠️ يرجى كتابة اسم المندوب أولاً في الصفحة الرئيسية")
-

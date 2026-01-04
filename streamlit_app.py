@@ -15,15 +15,15 @@ st.set_page_config(page_title="نظام طلبيات حلباوي", layout="cent
 # --- دالة الربط مع جوجل شيت (النظام المطور باستخدام Secrets) ---
 def send_to_google_sheets(delegate_name, items_list):
     try:
-        # إعداد التصاريح من الـ Secrets مباشرة لمنع التعطيل التلقائي
+        # إعداد التصاريح من الـ Secrets مباشرة لمنع التعطيل التلقائي من جوجل
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         
-        # جلب البيانات من الخزنة السرية (json_data)
+        # جلب البيانات من الخزنة السرية (json_data) التي أضفتها أنت في الإعدادات
         service_account_info = json.loads(st.secrets["gcp_service_account"]["json_data"])
         creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
         client = gspread.authorize(creds)
         
-        # فتح ملف الإكسل
+        # فتح ملف الإكسل باستخدام الـ ID الخاص بك
         sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
         
         # الدخول للصفحة التي تحمل اسم المندوب
@@ -46,7 +46,7 @@ def send_to_google_sheets(delegate_name, items_list):
         st.error(f"❌ فشل الاتصال بالإكسل: {e}")
         return False
 
-# 2. جلب البيانات (للأصناف)
+# 2. جلب البيانات (للأصناف) من ملف الإكسل
 SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
 SHEET_NAME = "طلبات"
 DIRECT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
@@ -63,7 +63,7 @@ def load_data():
 
 df = load_data()
 
-# 3. التنسيق (CSS)
+# 3. التنسيق الجمالي (CSS)
 st.markdown("""
     <style>
     html, body, [class*="st-"], div, p, h1, h2, h3, button, input {
@@ -103,7 +103,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# إدارة الحالة
+# إدارة حالة التطبيق
 if 'cart' not in st.session_state: st.session_state.cart = {}
 if 'special_items' not in st.session_state: st.session_state.special_items = []
 if 'page' not in st.session_state: st.session_state.page = 'home'

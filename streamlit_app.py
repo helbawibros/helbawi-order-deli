@@ -12,21 +12,21 @@ from google.oauth2.service_account import Credentials
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="نظام طلبيات حلباوي", layout="centered")
 
-# --- دالة الربط مع جوجل شيت (النسخة النهائية المصححة) ---
+# --- دالة الربط مع جوجل شيت (النسخة النهائية الفائقة) ---
 def send_to_google_sheets(delegate_name, items_list):
     try:
         # إعداد التصاريح
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         
-        # جلب البيانات من الخزنة السرية وتحويلها لقاموس
-        service_account_info = json.loads(st.secrets["gcp_service_account"]["json_data"])
+        # جلب البيانات وتنظيفها من أي مسافات زائدة قد تسبب خطأ seekable stream
+        raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
+        service_account_info = json.loads(raw_json)
         
-        # الحل النهائي لخطأ seekable bit stream:
-        # نستخدم from_service_account_info لأن البيانات أصبحت نصية وليست ملفاً
+        # الربط المباشر باستخدام المعلومات النصية
         creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
         client = gspread.authorize(creds)
         
-        # فتح ملف الإكسل باستخدام الـ ID
+        # فتح ملف الإكسل
         sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
         
         # الدخول للصفحة التي تحمل اسم المندوب

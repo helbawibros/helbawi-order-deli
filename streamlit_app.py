@@ -18,10 +18,11 @@ def send_to_google_sheets(delegate_name, items_list):
         # إعداد التصاريح
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         
-        # جلب البيانات من الخزنة السرية وتحويلها من نص إلى قاموس Python
+        # جلب البيانات من الخزنة السرية (Secrets)
+        # json.loads تحول النص الموجود في الخزنة إلى معلومات يفهمها الكود
         service_account_info = json.loads(st.secrets["gcp_service_account"]["json_data"])
         
-        # التعديل الجوهري: استخدام from_service_account_info بدلاً من الملف
+        # التعديل الذي سيحل مشكلة "seekable bit stream":
         creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
         client = gspread.authorize(creds)
         
@@ -45,7 +46,6 @@ def send_to_google_sheets(delegate_name, items_list):
             worksheet.append_rows(rows_to_append)
             return True
     except Exception as e:
-        # إذا ظهر خطأ "seekable bit stream" مجدداً، فهذا يعني أن هناك مشكلة في طريقة قراءة النص
         st.error(f"❌ فشل الاتصال بالإكسل: {e}")
         return False
 

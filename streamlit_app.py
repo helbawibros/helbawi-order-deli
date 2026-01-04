@@ -16,7 +16,7 @@ def send_to_google_sheets(delegate_name, items_list):
     try:
         # إعداد التصاريح
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = Credentials.from_service_account_file('creds.json', scopes=scope)
+        creds = Credentials.from_service_account_file('key.json', scopes=scope)
         client = gspread.authorize(creds)
         
         # فتح ملف الإكسل (استخدمت الـ ID الخاص بك)

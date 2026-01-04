@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "dynamic-moment-482811-p2",
+  "private_key_id": "d1aca1cffa9243f5f570463a42ada34a025ed57c",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCsfV5N6AfADnGl\n2GgPN5faafVsVw1VHafOI9Ps0csX8ED/EnhdImU29Y5wQ/WOrVmvXRQCgTtjRVv0\nX18H7DyiPEZlB8HFYRlvNPmzRCNsy1vvuQxN3Is3aKlut8myOD1cBqfT4Gda9LGX\n+uvhcmQ0Paypnvh62qe0cII3WqKexPgEHdSUG44TH9VRFxMWSGIq9ttyEqLuDcDR\nfVLqzUYd47QJD78oy2yZbhuUnaDKmBc7EBijR9F3hm4fD7sMJU3pRWrzIBWRP9F8\nlaJP93odCEIOaWEy/rSomKYCS7w4Z89VX1pLwVDY8Sv27N+EXnqBV1msLPba/jp4\nd7VZTirRAgMBAAECggEAIhS/TltbNKpl8CPbI66TVXd8I4TrwHaUklln5THqk/dH\nkF6A474JC5vnIe17lk5QGyMj8f7A0jOBIL67UyBtNoz8R7gJpEs0MFHiSHZdHYDs\n0Gfas4OxCiim2ZZ8xrbwAL/b5zQ+l60jbekJNEla3SuWcwlTBUswualFQVSqLv5f\nAefKGBb+oN5t/9mVvXbD3P1lMNmUqhZBFGvfHTCLcMEIb5EMhShBevCQWFsQuc+Y\nJjBSImffoqSK/VGtC0e8vM3tWFrBE1ibZsLu251hjO5USSxDoV5df2ZwAAEXkQvM\nGmpntBRiT/NPx4atkJVG8WhUuAJ8vaRNpLVUp0XqsQKBgQDY4fHmIJ2ZRDddmYmm\nQESOeYfnJKSjNUq7/8qaFbbQJj0N7f32hJJLRa6Tmv7vITQxrUfWxVM6ZvGKctfL\nFlRa6GM00uSRLByonuH5k7ZafGpj0ARtIl+KpEecWndsUT387ozliBqwt1VtU7fv\nxOKXF1GMCZ2h0xuEzlERowNslQKBgQDLma85H9L99uGwbmRzR66Dc7n/RRdggHV1\nVfqxiTzNSPR/s2gOx+mGK1uCgBsu5/68LgcKPXGYGjS8aZnFb6R3eHpqqyxTTfQc\nwnPKSzSgL0dFlzWg0j91+jIXB/LYZDNZFuwJNOQVEDz0GTQ+Jm3DIt2Rr5+qwBmv\nGc/IiAn6TQKBgEvy46j45veTIehPKhrkCp3yBRt2g4j70o3/R02qKPi/S0Yjf3ni\ndvCRGE9sSbYn5IU47x1QwJKFFjSrftIJocSr+IG5EH2d+vM5oFyr04Hga8lEQSiO\njvKYENO6AnQWByUZzJFcliwoJ2w/kvwN8GOEsPPfMipHKS3aqh0I/tv5AoGBAIm+\n4UihmksOI6UNGtLPlWcD/buRz/4PCuimkeRZOBSfHiPjiiwt3nVSkifZagqzFKnV\n7hdkeJzyZelu/IUSQlA953yRcHyvyc9HU7VyahlRw0N2yOaUODEmY4snaooySHcm\nxex4pzME+GghQTInJ62UwhjVnA2WyAmqSeSe/TklAoGASKiWclqoLYTuUSWqdXLv\n/2JzYA47gCtVkiuRtq3Z+BlxA1od3BAolD5KuPahcS0h/+Az6wq1zW3fOolGuhMW\ncd/yrgWALLb0E7CfHpCYSNARDpw8JKgD0jrtrSft4RLp+RLu4saFLHbKGSZQ3tU0\n2LMh5723xcDJqbWgYYIzeh0=\n-----END PRIVATE KEY-----\n",
+  "client_email": "halbawi-key@dynamic-moment-482811-p2.iam.gserviceaccount.com",
+  "client_id": "115614733615369209843",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/halbawi-key%40dynamic-moment-482811-p2.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

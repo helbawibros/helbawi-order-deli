@@ -1,3 +1,6 @@
+import os
+import time
+os.environ['TZ'] = 'Asia/Beirut' # أو توقيت منطقتك
 import streamlit as st
 import pandas as pd
 import urllib.parse

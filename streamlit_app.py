@@ -2,11 +2,45 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 from datetime import datetime
+import gspread
+from google.oauth2.service_account import Credentials
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="نظام طلبيات حلباوي", layout="centered")
 
-# 2. جلب البيانات
+# --- دالة الربط مع جوجل شيت (النظام الجديد) ---
+def send_to_google_sheets(delegate_name, items_list):
+    try:
+        # إعداد التصاريح
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = Credentials.from_service_account_file('creds.json', scopes=scope)
+        client = gspread.authorize(creds)
+        
+        # فتح ملف الإكسل (استخدمت الـ ID الخاص بك)
+        sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
+        
+        # الدخول للصفحة التي تحمل اسم المندوب
+        try:
+            worksheet = sheet.worksheet(delegate_name)
+        except:
+            st.error(f"⚠️ لم يتم العثور على صفحة باسم '{delegate_name}' في ملف الإكسل")
+            return False
+
+        # تحضير الأسطر للإرسال
+        rows_to_append = []
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        for item in items_list:
+            # ترتيب الأعمدة: التاريخ | اسم الصنف | الكمية | الحالة
+            rows_to_append.append([now_str, item['name'], item['qty'], "بانتظار التصديق"])
+        
+        if rows_to_append:
+            worksheet.append_rows(rows_to_append)
+            return True
+    except Exception as e:
+        st.error(f"❌ فشل الاتصال بالإكسل: {e}")
+        return False
+
+# 2. جلب البيانات (للأصناف)
 SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
 SHEET_NAME = "طلبات"
 DIRECT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
@@ -23,59 +57,42 @@ def load_data():
 
 df = load_data()
 
-# 3. التنسيق (إجبار الخط السادة ومنع الزخرفة)
+# 3. التنسيق (نفس الستايل الخاص بك)
 st.markdown("""
     <style>
-    /* إجبار الخط السادة على كل التطبيق */
     html, body, [class*="st-"], div, p, h1, h2, h3, button, input {
         font-family: 'Tahoma', 'Arial', sans-serif !important;
-        -webkit-font-smoothing: antialiased;
     }
-
     .stApp { background-color: #0E1117; color: white; direction: rtl; }
-    [data-testid="stSidebar"] { display: none; }
-    
-    /* الخانة الزرقاء */
     .main-header { 
         background-color: #1E3A8A; text-align: center; padding: 25px 10px; 
         border-radius: 15px; border-bottom: 5px solid #fca311; margin-bottom: 20px; 
     }
     .main-header h1 { margin: 0; font-size: 28px !important; color: white; font-weight: bold; }
     .main-header p { margin: 5px 0 0 0; font-size: 18px; color: #fca311; }
-
     .info-box {
         background-color: #1c2333; padding: 12px; border-radius: 10px;
         border: 1px solid #2d3748; margin-bottom: 20px; text-align: right;
     }
-    
-    .section-title { text-align: right !important; font-size: 20px; font-weight: bold; margin-bottom: 10px; }
-
-    /* الأزرار الصفراء العريضة والسادة */
     div.stButton > button {
         width: 100% !important; background-color: #fca311 !important;
         color: #1E3A8A !important; font-weight: bold !important;
         height: 65px !important; font-size: 22px !important;
         border-radius: 10px !important; border: none !important;
     }
-
-    /* خانات الإدخال - خط أسود سادة */
     input { 
-        background-color: #ffffcc !important; 
-        color: #000000 !important; 
+        background-color: #ffffcc !important; color: #000000 !important; 
         font-weight: bold !important; text-align: right !important;
         height: 55px !important; font-size: 20px !important;
-        border: 1px solid #ccc !important;
     }
-
     .item-label { 
         background-color: #1E3A8A; color: white; padding: 12px; 
         border-radius: 8px; font-weight: bold; text-align: right; font-size: 18px;
     }
-
     .wa-button {
         background-color: #25d366; color: white; padding: 20px; 
         border-radius: 12px; text-align: center; font-weight: bold; 
-        font-size: 24px; display: block; width: 100%; text-decoration: none;
+        font-size: 24px; display: block; width: 100%; text-decoration: none; margin-top: 10px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -89,15 +106,14 @@ if 'cust_name' not in st.session_state: st.session_state.cust_name = ""
 now = datetime.now().strftime("%Y-%m-%d | %H:%M")
 
 if df is not None:
-    # --- الصفحة الرئيسية ---
     if st.session_state.page == 'home':
         st.markdown('<div class="main-header"><h1>طلبيات المندوبين</h1><p>شركة حلباوي إخوان</p></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="info-box">🗓️ {now} <br> 👤 المندوب: {st.session_state.cust_name if st.session_state.cust_name else "---"}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="info-box">🗓️ {now} <br> 👤 المندوب الحالي: {st.session_state.cust_name if st.session_state.cust_name else "---"}</div>', unsafe_allow_html=True)
 
-        st.markdown("<p class='section-title'>👤 اسم المندوب / الزبون:</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:right; font-weight:bold;'>👤 اختر أو اكتب اسم المندوب (مطابق لاسم الصفحة):</p>", unsafe_allow_html=True)
         st.session_state.cust_name = st.text_input("n_in", value=st.session_state.cust_name, label_visibility="collapsed")
         
-        st.markdown("<p class='section-title'>📂 الأقسام:</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:right; font-weight:bold;'>📂 الأقسام:</p>", unsafe_allow_html=True)
         for c in df['cat'].unique():
             if st.button(f"📦 قسم {c}"):
                 st.session_state.sel_cat = c
@@ -114,7 +130,6 @@ if df is not None:
                 st.session_state.page = 'review'
                 st.rerun()
 
-    # --- صفحة أصناف خاصة ---
     elif st.session_state.page == 'special':
         st.markdown('<div class="main-header"><h1>أصناف خاصة</h1></div>', unsafe_allow_html=True)
         if st.button("🏠 العودة للرئيسية"):
@@ -138,7 +153,6 @@ if df is not None:
             st.session_state.page = 'review'
             st.rerun()
 
-    # --- صفحة التفاصيل ---
     elif st.session_state.page == 'details':
         cat = st.session_state.sel_cat
         st.markdown(f'<div class="main-header"><h1>{cat}</h1></div>', unsafe_allow_html=True)
@@ -164,37 +178,32 @@ if df is not None:
             st.session_state.page = 'review'
             st.rerun()
 
-    # --- صفحة المراجعة ---
     elif st.session_state.page == 'review':
         st.markdown('<div class="main-header"><h1>مراجعة الطلبية</h1></div>', unsafe_allow_html=True)
         st.markdown(f"<div class='info-box'>👤 المندوب: {st.session_state.cust_name}</div>", unsafe_allow_html=True)
         
-        items_list = []
+        final_list = []
         for k, v in st.session_state.cart.items():
             st.markdown(f"<p style='text-align:right; font-size:18px;'>✅ {v['name']} : <b>{v['qty']}</b></p>", unsafe_allow_html=True)
-            items_list.append(f"{v['name']}: {v['qty']}")
+            final_list.append({'name': v['name'], 'qty': v['qty']})
             
         for item in st.session_state.special_items:
             disp = f"{item['name']} ({item['pack']})" if item['pack'] else item['name']
             st.markdown(f"<p style='text-align:right; font-size:18px;'>✅ {disp} : <b>{item['qty']}</b></p>", unsafe_allow_html=True)
-            items_list.append(f"{disp}: {item['qty']}")
+            final_list.append({'name': disp, 'qty': item['qty']})
         
         st.divider()
-        st.markdown("<p class='section-title'>➕ إضافة أصناف أخرى:</p>", unsafe_allow_html=True)
-        for c in df['cat'].unique():
-            if st.button(f"العودة لـ {c}"):
-                st.session_state.sel_cat = c
-                st.session_state.page = 'details'
-                st.rerun()
-        if st.button("العودة للأصناف الخاصة"):
-            st.session_state.page = 'special'
-            st.rerun()
-
-        st.divider()
-        if st.button("🚀 إرسال الطلب للشركة"):
+        if st.button("🚀 إرسال الطلب للشركة وتحديث الجرد"):
             if st.session_state.cust_name:
-                order_text = f"طلبية: {st.session_state.cust_name}\nالتوقيت: {now}\n" + "\n".join(items_list)
-                url = f"https://api.whatsapp.com/send?phone=9613220893&text={urllib.parse.quote(order_text)}"
-                st.markdown(f'<a href="{url}" target="_blank" class="wa-button">فتح واتساب للإرسال ✅</a>', unsafe_allow_html=True)
-            else: st.error("أدخل الاسم")
-
+                # 1. محاولة الإرسال لجوجل شيت
+                with st.spinner('جاري تحديث الجرد في الإكسل...'):
+                    success = send_to_google_sheets(st.session_state.cust_name, final_list)
+                
+                if success:
+                    st.success("✅ تم تحديث جرد الفان بنجاح!")
+                    # 2. تجهيز واتساب
+                    order_text = f"طلبية: {st.session_state.cust_name}\nالتوقيت: {now}\n" + "\n".join([f"{i['name']}: {i['qty']}" for i in final_list])
+                    url = f"https://api.whatsapp.com/send?phone=9613220893&text={urllib.parse.quote(order_text)}"
+                    st.markdown(f'<a href="{url}" target="_blank" class="wa-button">إرسال عبر واتساب الآن ✅</a>', unsafe_allow_html=True)
+            else: 
+                st.error("⚠️ يرجى كتابة اسم المندوب أولاً في الصفحة الرئيسية")

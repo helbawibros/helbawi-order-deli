@@ -18,22 +18,22 @@ def send_to_google_sheets(delegate_name, items_list):
         # إعداد التصاريح
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         
-        # جلب البيانات من الخزنة السرية (Secrets)
-        # json.loads تحول النص الموجود في الخزنة إلى معلومات يفهمها الكود
+        # جلب البيانات من الخزنة السرية وتحويلها لقاموس
         service_account_info = json.loads(st.secrets["gcp_service_account"]["json_data"])
         
-        # التعديل الذي سيحل مشكلة "seekable bit stream":
+        # الحل النهائي لخطأ seekable bit stream:
+        # نستخدم from_service_account_info لأن البيانات أصبحت نصية وليست ملفاً
         creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
         client = gspread.authorize(creds)
         
-        # فتح ملف الإكسل
+        # فتح ملف الإكسل باستخدام الـ ID
         sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
         
         # الدخول للصفحة التي تحمل اسم المندوب
         try:
             worksheet = sheet.worksheet(delegate_name)
         except:
-            st.error(f"⚠️ لم يتم العثور على صفحة باسم '{delegate_name}' في ملف الإكسل")
+            st.error(f"⚠️ لم يتم العثور على صفحة باسم '{delegate_name}'")
             return False
 
         # تحضير الأسطر للإرسال
@@ -66,7 +66,7 @@ def load_data():
 
 df = load_data()
 
-# 3. التنسيق (CSS)
+# 3. التنسيق الجمالي (CSS)
 st.markdown("""
     <style>
     html, body, [class*="st-"], div, p, h1, h2, h3, button, input {
@@ -106,7 +106,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# إدارة الحالة
+# إدارة حالة التطبيق
 if 'cart' not in st.session_state: st.session_state.cart = {}
 if 'special_items' not in st.session_state: st.session_state.special_items = []
 if 'page' not in st.session_state: st.session_state.page = 'home'
@@ -119,7 +119,7 @@ if df is not None:
         st.markdown('<div class="main-header"><h1>طلبيات المندوبين</h1><p>شركة حلباوي إخوان</p></div>', unsafe_allow_html=True)
         st.markdown(f'<div class="info-box">🗓️ {now} <br> 👤 المندوب الحالي: {st.session_state.cust_name if st.session_state.cust_name else "---"}</div>', unsafe_allow_html=True)
 
-        st.markdown("<p style='text-align:right; font-weight:bold;'>👤 اكتب اسم المندوب (مطابق تماماً لاسم الصفحة في الإكسل):</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:right; font-weight:bold;'>👤 اكتب اسم المندوب:</p>", unsafe_allow_html=True)
         st.session_state.cust_name = st.text_input("n_in", value=st.session_state.cust_name, label_visibility="collapsed")
         
         st.markdown("<p style='text-align:right; font-weight:bold;'>📂 الأقسام:</p>", unsafe_allow_html=True)

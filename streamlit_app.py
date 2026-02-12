@@ -13,27 +13,54 @@ from google.oauth2.service_account import Credentials
 st.set_page_config(page_title="نظام طلبيات حلباوي", layout="centered")
 
 # --- دالة الربط مع جوجل شيت (النسخة النهائية الفولاذية) ---
+# --- دالة الربط مع جوجل شيت (النسخة المحمية من الانهيار) ---
 def send_to_google_sheets(delegate_name, items_list):
-    try:
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        
-        # جلب وتنظيف البيانات
-        raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
-        service_account_info = json.loads(raw_json, strict=False)
-        
-        creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
-        client = gspread.authorize(creds)
-        
-        # فتح ملف الإكسل
-        sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
-        
-        # اختيار الصفحة بناءً على اسم المندوب
-        target = delegate_name.strip()
+    # محاولة تنفيذ العملية 3 مرات في حال حدوث خطأ من جوجل
+    for attempt in range(3):
         try:
-            worksheet = sheet.worksheet(target)
-        except:
-            st.error(f"⚠️ لم يتم العثور على صفحة باسم '{target}'")
+            scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+            
+            # جلب وتنظيف البيانات
+            raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
+            service_account_info = json.loads(raw_json, strict=False)
+            
+            creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
+            client = gspread.authorize(creds)
+            
+            # فتح ملف الإكسل
+            sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
+            
+            # اختيار الصفحة بناءً على اسم المندوب
+            target = delegate_name.strip()
+            try:
+                worksheet = sheet.worksheet(target)
+            except:
+                st.error(f"⚠️ لم يتم العثور على صفحة باسم '{target}'")
+                return False
+
+            # تحضير الأسطر
+            rows = []
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+            for item in items_list:
+                rows.append([now_str, item['name'], item['qty'], "بانتظار التصديق"])
+            
+            if rows:
+                worksheet.append_rows(rows)
+                return True
+                
+        except gspread.exceptions.APIError as e:
+            # إذا كان الخطأ من جوجل، انتظر ثانيتين وجرب مرة أخرى
+            if attempt < 2:
+                time.sleep(2)
+                continue
+            else:
+                st.error("⚠️ خوادم جوجل مشغولة حالياً، يرجى المحاولة بعد لحظات.")
+                return False
+        except Exception as e:
+            st.error(f"❌ خطأ تقني: {str(e)}")
             return False
+    return False
+
 
         # تحضير الأسطر
         rows = []

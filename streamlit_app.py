@@ -12,7 +12,7 @@ from google.oauth2.service_account import Credentials
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="نظام طلبيات حلباوي", layout="centered")
 
-# --- دالة الربط مع جوجل شيت (النسخة المعدلة لنظام الدفعات) ---
+# --- دالة الربط مع جوجل شيت (نظام الدفعات) ---
 def send_to_google_sheets(delegate_name, items_list):
     for attempt in range(3):
         try:
@@ -20,6 +20,7 @@ def send_to_google_sheets(delegate_name, items_list):
             raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
             creds = Credentials.from_service_account_info(json.loads(raw_json, strict=False), scopes=scope)
             client = gspread.authorize(creds)
+            
             sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
             
             target = delegate_name.strip()
@@ -51,7 +52,7 @@ def send_to_google_sheets(delegate_name, items_list):
                 return False
     return False
 
-# --- دالة جلب قائمة المندوبين (بدون الصفحات الإدارية) ---
+# --- دالة جلب قائمة المندوبين (فلتر الكلمة الواحدة) ---
 @st.cache_data(ttl=600)
 def get_delegates_list():
     try:
@@ -63,13 +64,19 @@ def get_delegates_list():
         sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
         all_sheets = sheet.worksheets()
         
-        # ⛔ القائمة السوداء (الصفحات التي ستختفي)
+        # القائمة السوداء (للاحتياط)
         excluded_sheets = [
             "طلبات", "الذمم", "بيانات المندوبين", "عاجل", "Sheet1", 
-            "الرئيسية", "أسعار", "Item", "Products", "البيانات" # أضفت "البيانات" كما طلبت
+            "الرئيسية", "أسعار", "Item", "Products", "البيانات"
         ]
         
-        delegates = [s.title for s in all_sheets if s.title not in excluded_sheets]
+        # --- 🔥 التعديل هنا: الشرط الذكي (كلمتين وأكثر) ---
+        # الشرط: (ليس في القائمة الممنوعة) و (يحتوي على مسافة واحدة على الأقل)
+        delegates = [
+            s.title for s in all_sheets 
+            if s.title not in excluded_sheets and " " in s.title.strip()
+        ]
+        
         return delegates
         
     except Exception as e:
@@ -144,8 +151,9 @@ if df is not None:
     if st.session_state.page == 'home':
         st.markdown('<div class="main-header"><h1>طلبيات المندوبين</h1><p>شركة حلباوي إخوان</p></div>', unsafe_allow_html=True)
         
-        # --- اختيار المندوب من القائمة ---
         st.markdown("<p style='text-align:right; font-weight:bold;'>👤 اختر المندوب:</p>", unsafe_allow_html=True)
+        
+        # استدعاء القائمة المفلترة
         delegates_list = get_delegates_list()
         
         if delegates_list:

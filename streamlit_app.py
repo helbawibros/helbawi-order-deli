@@ -14,19 +14,12 @@ st.set_page_config(page_title="نظام طلبيات حلباوي", layout="cent
 
 # --- دالة الربط مع جوجل شيت (النسخة المعدلة لنظام الدفعات) ---
 def send_to_google_sheets(delegate_name, items_list):
-    # محاولة 3 مرات في حال حدوث خطأ
     for attempt in range(3):
         try:
             scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-            
-            # جلب البيانات
             raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
-            service_account_info = json.loads(raw_json, strict=False)
-            
-            creds = Credentials.from_service_account_info(service_account_info, scopes=scope)
+            creds = Credentials.from_service_account_info(json.loads(raw_json, strict=False), scopes=scope)
             client = gspread.authorize(creds)
-            
-            # فتح ملف الإكسل
             sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
             
             target = delegate_name.strip()
@@ -36,63 +29,57 @@ def send_to_google_sheets(delegate_name, items_list):
                 st.error(f"⚠️ لم يتم العثور على صفحة باسم '{target}'")
                 return False
 
-            # تحضير الأسطر
             rows = []
             now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
             for item in items_list:
                 rows.append([now_str, item['name'], item['qty'], "بانتظار التصديق"])
             
             if rows:
-                # --- 🔥 التعديل هنا: تقسيم الإرسال لمنع التقطيع ---
-                chunk_size = 20  # إرسال 20 سطر في كل دفعة
+                chunk_size = 20
                 for i in range(0, len(rows), chunk_size):
                     chunk = rows[i:i + chunk_size]
                     worksheet.append_rows(chunk)
-                    time.sleep(0.5) # استراحة نصف ثانية لتريح السيرفر
-                
+                    time.sleep(0.5)
                 return True
                 
         except Exception as e:
-            # إعادة المحاولة في حال فشل الاتصال
             if attempt < 2:
                 time.sleep(2)
                 continue
             else:
-                st.error(f"❌ خطأ تقني بعد عدة محاولات: {str(e)}")
+                st.error(f"❌ خطأ تقني: {str(e)}")
                 return False
     return False
 
-# 2. جلب البيانات (للأصناف)
-SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
-SHEET_NAME = "طلبات"
-DIRECT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
 # --- دالة جلب قائمة المندوبين (بدون الصفحات الإدارية) ---
-@st.cache_data(ttl=600) # تحديث القائمة كل 10 دقائق
+@st.cache_data(ttl=600)
 def get_delegates_list():
     try:
-        # 1. الاتصال بجوجل (نفس كود الاتصال الموجود عندك)
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
         creds = Credentials.from_service_account_info(json.loads(raw_json, strict=False), scopes=scope)
         client = gspread.authorize(creds)
         
-        # 2. فتح الملف وجلب العناوين
         sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
         all_sheets = sheet.worksheets()
         
-        # 3. ⛔ قائمة الصفحات التي تريد إخفاءها (عدلها حسب حاجتك)
+        # ⛔ القائمة السوداء (الصفحات التي ستختفي)
         excluded_sheets = [
             "طلبات", "الذمم", "بيانات المندوبين", "عاجل", "Sheet1", 
-            "الرئيسية", "أسعار", "Item", "Products"
+            "الرئيسية", "أسعار", "Item", "Products", "البيانات" # أضفت "البيانات" كما طلبت
         ]
         
-        # 4. الفلترة: نأخذ فقط الصفحات التي ليست في القائمة الممنوعة
         delegates = [s.title for s in all_sheets if s.title not in excluded_sheets]
         return delegates
         
     except Exception as e:
         st.error(f"خطأ في جلب الأسماء: {e}")
         return []
+
+# 2. جلب البيانات
+SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
+SHEET_NAME = "طلبات"
+DIRECT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
 
 @st.cache_data(ttl=60)
 def load_data():
@@ -106,7 +93,7 @@ def load_data():
 
 df = load_data()
 
-# 3. التنسيق الجمالي (CSS)
+# 3. التنسيق
 st.markdown("""
     <style>
     html, body, [class*="st-"], div, p, h1, h2, h3, button, input {
@@ -146,7 +133,6 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# إدارة حالة التطبيق
 if 'cart' not in st.session_state: st.session_state.cart = {}
 if 'special_items' not in st.session_state: st.session_state.special_items = []
 if 'page' not in st.session_state: st.session_state.page = 'home'
@@ -155,27 +141,23 @@ if 'cust_name' not in st.session_state: st.session_state.cust_name = ""
 now = datetime.now().strftime("%Y-%m-%d | %H:%M")
 
 if df is not None:
-        if st.session_state.page == 'home':
+    if st.session_state.page == 'home':
         st.markdown('<div class="main-header"><h1>طلبيات المندوبين</h1><p>شركة حلباوي إخوان</p></div>', unsafe_allow_html=True)
         
-        # --- التعديل هنا: استخدام القائمة المنسدلة بدلاً من الكتابة ---
+        # --- اختيار المندوب من القائمة ---
         st.markdown("<p style='text-align:right; font-weight:bold;'>👤 اختر المندوب:</p>", unsafe_allow_html=True)
-        
-        # جلب القائمة المفلترة
         delegates_list = get_delegates_list()
         
-        # عرض القائمة (مع خيار افتراضي فارغ إذا أردت)
         if delegates_list:
             selected_rep = st.selectbox("القائمة", ["-- اختر --"] + delegates_list, label_visibility="collapsed")
             if selected_rep != "-- اختر --":
                 st.session_state.cust_name = selected_rep
         else:
-            st.warning("جاري تحميل قائمة المندوبين...")
+            st.warning("جاري تحميل الأسماء...")
 
         st.markdown(f'<div class="info-box">🗓️ {now} <br> 👤 المندوب المختار: <b style="color:#fca311">{st.session_state.cust_name if st.session_state.cust_name else "---"}</b></div>', unsafe_allow_html=True)
-        
-        # ... (باقي الكود للأقسام يبقى كما هو) ...
 
+        st.markdown("<p style='text-align:right; font-weight:bold;'>📂 الأقسام:</p>", unsafe_allow_html=True)
         for c in df['cat'].unique():
             if st.button(f"📦 قسم {c}"):
                 st.session_state.sel_cat = c
@@ -266,4 +248,4 @@ if df is not None:
                     url = f"https://api.whatsapp.com/send?phone=9613220893&text={urllib.parse.quote(order_text)}"
                     st.markdown(f'<a href="{url}" target="_blank" class="wa-button">إرسال عبر واتساب الآن ✅</a>', unsafe_allow_html=True)
             else: 
-                st.error("⚠️ يرجى كتابة اسم المندوب أولاً في الصفحة الرئيسية")
+                st.error("⚠️ يرجى اختيار اسم المندوب أولاً من الصفحة الرئيسية")

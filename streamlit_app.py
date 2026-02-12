@@ -81,7 +81,7 @@ SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
 SHEET_NAME = "طلبات"
 DIRECT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
 
-@st.cache_data(ttl=1)
+@st.cache_data(ttl=60)
 def load_data():
     try:
         df = pd.read_csv(DIRECT_URL, header=None).dropna(how='all')

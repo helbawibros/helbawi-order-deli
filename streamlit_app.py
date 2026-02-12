@@ -12,15 +12,14 @@ from google.oauth2.service_account import Credentials
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="نظام طلبيات حلباوي", layout="centered")
 
-# --- دالة الربط مع جوجل شيت (النسخة النهائية الفولاذية) ---
-# --- دالة الربط مع جوجل شيت (النسخة المحمية من الانهيار) ---
+# --- دالة الربط مع جوجل شيت (النسخة المعدلة لنظام الدفعات) ---
 def send_to_google_sheets(delegate_name, items_list):
-    # محاولة تنفيذ العملية 3 مرات في حال حدوث خطأ من جوجل
+    # محاولة 3 مرات في حال حدوث خطأ
     for attempt in range(3):
         try:
             scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
             
-            # جلب وتنظيف البيانات
+            # جلب البيانات
             raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
             service_account_info = json.loads(raw_json, strict=False)
             
@@ -30,7 +29,6 @@ def send_to_google_sheets(delegate_name, items_list):
             # فتح ملف الإكسل
             sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
             
-            # اختيار الصفحة بناءً على اسم المندوب
             target = delegate_name.strip()
             try:
                 worksheet = sheet.worksheet(target)
@@ -45,37 +43,25 @@ def send_to_google_sheets(delegate_name, items_list):
                 rows.append([now_str, item['name'], item['qty'], "بانتظار التصديق"])
             
             if rows:
-                worksheet.append_rows(rows)
+                # --- 🔥 التعديل هنا: تقسيم الإرسال لمنع التقطيع ---
+                chunk_size = 20  # إرسال 20 سطر في كل دفعة
+                for i in range(0, len(rows), chunk_size):
+                    chunk = rows[i:i + chunk_size]
+                    worksheet.append_rows(chunk)
+                    time.sleep(0.5) # استراحة نصف ثانية لتريح السيرفر
+                
                 return True
                 
-        except gspread.exceptions.APIError as e:
-            # إذا كان الخطأ من جوجل، انتظر ثانيتين وجرب مرة أخرى
+        except Exception as e:
+            # إعادة المحاولة في حال فشل الاتصال
             if attempt < 2:
                 time.sleep(2)
                 continue
             else:
-                st.error("⚠️ خوادم جوجل مشغولة حالياً، يرجى المحاولة بعد لحظات.")
+                st.error(f"❌ خطأ تقني بعد عدة محاولات: {str(e)}")
                 return False
-        except Exception as e:
-            st.error(f"❌ خطأ تقني: {str(e)}")
-            return False
     return False
 
-
-        # تحضير الأسطر
-        rows = []
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
-        for item in items_list:
-            rows.append([now_str, item['name'], item['qty'], "بانتظار التصديق"])
-        
-        if rows:
-            worksheet.append_rows(rows)
-            return True
-    except Exception as e:
-        st.error(f"❌ خطأ تقني: {str(e)}")
-        return False
-
-# (باقي كود الواجهات يبقى كما هو)
 # 2. جلب البيانات (للأصناف)
 SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
 SHEET_NAME = "طلبات"

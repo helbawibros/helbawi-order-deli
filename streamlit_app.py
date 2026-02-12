@@ -155,14 +155,27 @@ if 'cust_name' not in st.session_state: st.session_state.cust_name = ""
 now = datetime.now().strftime("%Y-%m-%d | %H:%M")
 
 if df is not None:
-    if st.session_state.page == 'home':
+        if st.session_state.page == 'home':
         st.markdown('<div class="main-header"><h1>طلبيات المندوبين</h1><p>شركة حلباوي إخوان</p></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="info-box">🗓️ {now} <br> 👤 المندوب الحالي: {st.session_state.cust_name if st.session_state.cust_name else "---"}</div>', unsafe_allow_html=True)
-
-        st.markdown("<p style='text-align:right; font-weight:bold;'>👤 اكتب اسم المندوب:</p>", unsafe_allow_html=True)
-        st.session_state.cust_name = st.text_input("n_in", value=st.session_state.cust_name, label_visibility="collapsed")
         
-        st.markdown("<p style='text-align:right; font-weight:bold;'>📂 الأقسام:</p>", unsafe_allow_html=True)
+        # --- التعديل هنا: استخدام القائمة المنسدلة بدلاً من الكتابة ---
+        st.markdown("<p style='text-align:right; font-weight:bold;'>👤 اختر المندوب:</p>", unsafe_allow_html=True)
+        
+        # جلب القائمة المفلترة
+        delegates_list = get_delegates_list()
+        
+        # عرض القائمة (مع خيار افتراضي فارغ إذا أردت)
+        if delegates_list:
+            selected_rep = st.selectbox("القائمة", ["-- اختر --"] + delegates_list, label_visibility="collapsed")
+            if selected_rep != "-- اختر --":
+                st.session_state.cust_name = selected_rep
+        else:
+            st.warning("جاري تحميل قائمة المندوبين...")
+
+        st.markdown(f'<div class="info-box">🗓️ {now} <br> 👤 المندوب المختار: <b style="color:#fca311">{st.session_state.cust_name if st.session_state.cust_name else "---"}</b></div>', unsafe_allow_html=True)
+        
+        # ... (باقي الكود للأقسام يبقى كما هو) ...
+
         for c in df['cat'].unique():
             if st.button(f"📦 قسم {c}"):
                 st.session_state.sel_cat = c

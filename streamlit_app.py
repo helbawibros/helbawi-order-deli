@@ -66,6 +66,33 @@ def send_to_google_sheets(delegate_name, items_list):
 SHEET_ID = "1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0"
 SHEET_NAME = "طلبات"
 DIRECT_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(SHEET_NAME)}"
+# --- دالة جلب قائمة المندوبين (بدون الصفحات الإدارية) ---
+@st.cache_data(ttl=600) # تحديث القائمة كل 10 دقائق
+def get_delegates_list():
+    try:
+        # 1. الاتصال بجوجل (نفس كود الاتصال الموجود عندك)
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        raw_json = st.secrets["gcp_service_account"]["json_data"].strip()
+        creds = Credentials.from_service_account_info(json.loads(raw_json, strict=False), scopes=scope)
+        client = gspread.authorize(creds)
+        
+        # 2. فتح الملف وجلب العناوين
+        sheet = client.open_by_key("1-Abj-Kvbe02az8KYZfQL0eal2arKw_wgjVQdJX06IA0")
+        all_sheets = sheet.worksheets()
+        
+        # 3. ⛔ قائمة الصفحات التي تريد إخفاءها (عدلها حسب حاجتك)
+        excluded_sheets = [
+            "طلبات", "الذمم", "بيانات المندوبين", "عاجل", "Sheet1", 
+            "الرئيسية", "أسعار", "Item", "Products"
+        ]
+        
+        # 4. الفلترة: نأخذ فقط الصفحات التي ليست في القائمة الممنوعة
+        delegates = [s.title for s in all_sheets if s.title not in excluded_sheets]
+        return delegates
+        
+    except Exception as e:
+        st.error(f"خطأ في جلب الأسماء: {e}")
+        return []
 
 @st.cache_data(ttl=60)
 def load_data():
